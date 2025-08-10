@@ -1,0 +1,956 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServiceHub - Find Local Service Providers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1976D2',
+                        secondary: '#388E3C',
+                        accent: '#FF9800',
+                        neutral: '#F5F5F5',
+                        'text-primary': '#424242',
+                        'text-secondary': '#757575',
+                        success: '#4CAF50',
+                        error: '#F44336',
+                        warning: '#FF9800'
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'system-ui', 'sans-serif']
+                    },
+                    spacing: {
+                        '18': '4.5rem',
+                        '88': '22rem'
+                    },
+                    boxShadow: {
+                        'material-1': '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+                        'material-2': '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)',
+                        'material-3': '0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23)'
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="font-inter bg-neutral min-h-screen">
+    <!-- @COMPONENT: Header -->
+    <header class="bg-white shadow-material-1 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                        <i class="fas fa-tools text-white text-lg"></i>
+                    </div>
+                    <span class="text-xl font-semibold text-text-primary">ServiceHub</span>
+                </div>
+                
+                <nav class="hidden md:flex items-center space-x-6">
+                    <a href="#" class="text-text-secondary hover:text-primary transition-colors">Services</a>
+                    <a href="#" class="text-text-secondary hover:text-primary transition-colors">How it works</a>
+                    <a href="#" class="text-text-secondary hover:text-primary transition-colors">Support</a>
+                    <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        Sign In
+                    </button>
+                </nav>
+                
+                <button class="md:hidden text-text-primary">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <!-- @COMPONENT: SearchHero -->
+    <section class="bg-gradient-to-br from-primary to-blue-700 text-white py-16">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                Find Trusted Local Service Providers
+            </h1>
+            <p class="text-xl mb-8 text-blue-100">
+                Connect with verified professionals near you for home services, repairs, and more
+            </p>
+            
+            <!-- @COMPONENT: SearchForm -->
+            <div class="bg-white rounded-xl shadow-material-3 p-6 text-left max-w-2xl mx-auto">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-text-primary mb-2">Service Type</label>
+                        <select id="serviceSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-primary">
+                            <option value="">Select a service...</option>
+                            <!-- @MAP: services.map(service => ( -->
+                            <option value="cleaning" data-mock="true">🏠 Home Cleaning</option>
+                            <option value="plumbing" data-mock="true">🔧 Plumbing</option>
+                            <option value="electrical" data-mock="true">⚡ Electrical</option>
+                            <option value="painting" data-mock="true">🎨 Painting</option>
+                            <option value="gardening" data-mock="true">🌱 Gardening</option>
+                            <!-- @END_MAP -->
+                        </select>
+                    </div>
+                    
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-text-primary mb-2">Location</label>
+                        <div class="relative">
+                            <input type="text" placeholder="Enter your location" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-primary pr-12">
+                            <button id="locationBtn" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary hover:text-blue-700">
+                                <i class="fas fa-crosshairs text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button id="searchBtn" class="bg-primary text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium md:mt-7">
+                        <i class="fas fa-search mr-2"></i>Search
+                    </button>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: SearchForm -->
+        </div>
+    </section>
+    <!-- @END_COMPONENT: SearchHero -->
+
+    <!-- @COMPONENT: SearchResults -->
+    <section class="py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- @COMPONENT: ResultsHeader -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-semibold text-text-primary">Available Providers</h2>
+                    <p class="text-text-secondary mt-1" data-bind="searchResults.count">Showing 12 providers near you</p>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <label class="text-sm text-text-secondary">Sort by:</label>
+                    <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary">
+                        <option>Distance</option>
+                        <option>Rating</option>
+                        <option>Price</option>
+                    </select>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: ResultsHeader -->
+
+            <!-- @COMPONENT: ProviderGrid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="providersGrid">
+                <!-- @MAP: providers.map(provider => ( -->
+                
+                <!-- Provider Card 1 -->
+                <div class="bg-white rounded-xl shadow-material-1 hover:shadow-material-2 transition-shadow cursor-pointer provider-card" data-provider-id="1">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <!-- Professional avatar placeholder -->
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face" 
+                                     alt="Provider profile" class="w-12 h-12 rounded-full object-cover" data-mock="true">
+                                <div>
+                                    <h3 class="font-semibold text-text-primary" data-bind="provider.name">Ramesh Kumar</h3>
+                                    <p class="text-sm text-text-secondary" data-bind="provider.service">Home Cleaning Specialist</p>
+                                </div>
+                            </div>
+                            <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs font-medium">Verified</span>
+                        </div>
+
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="flex items-center space-x-1">
+                                <div class="flex text-accent">
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                </div>
+                                <span class="text-sm font-medium text-text-primary" data-bind="provider.rating">4.9</span>
+                                <span class="text-sm text-text-secondary">(<span data-bind="provider.reviewCount">127</span>)</span>
+                            </div>
+                            
+                            <div class="flex items-center text-text-secondary text-sm">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                <span data-bind="provider.distance">1.2 km away</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-text-secondary">Starting from</span>
+                                <span class="text-lg font-semibold text-text-primary" data-bind="provider.price">₹300/hour</span>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium book-service-btn">
+                                Book Service
+                            </button>
+                            <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors view-profile-btn">
+                                <i class="fas fa-eye text-text-secondary"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Provider Card 2 -->
+                <div class="bg-white rounded-xl shadow-material-1 hover:shadow-material-2 transition-shadow cursor-pointer provider-card" data-provider-id="2">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <!-- Professional avatar placeholder -->
+                                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face" 
+                                     alt="Provider profile" class="w-12 h-12 rounded-full object-cover" data-mock="true">
+                                <div>
+                                    <h3 class="font-semibold text-text-primary" data-bind="provider.name">Sita Devi</h3>
+                                    <p class="text-sm text-text-secondary" data-bind="provider.service">Plumbing Expert</p>
+                                </div>
+                            </div>
+                            <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs font-medium">Verified</span>
+                        </div>
+
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="flex items-center space-x-1">
+                                <div class="flex text-accent">
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="far fa-star text-sm"></i>
+                                </div>
+                                <span class="text-sm font-medium text-text-primary" data-bind="provider.rating">4.6</span>
+                                <span class="text-sm text-text-secondary">(<span data-bind="provider.reviewCount">89</span>)</span>
+                            </div>
+                            
+                            <div class="flex items-center text-text-secondary text-sm">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                <span data-bind="provider.distance">1.8 km away</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-text-secondary">Starting from</span>
+                                <span class="text-lg font-semibold text-text-primary" data-bind="provider.price">₹600/job</span>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium book-service-btn">
+                                Book Service
+                            </button>
+                            <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors view-profile-btn">
+                                <i class="fas fa-eye text-text-secondary"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Provider Card 3 -->
+                <div class="bg-white rounded-xl shadow-material-1 hover:shadow-material-2 transition-shadow cursor-pointer provider-card" data-provider-id="3">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <!-- Professional avatar placeholder -->
+                                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face" 
+                                     alt="Provider profile" class="w-12 h-12 rounded-full object-cover" data-mock="true">
+                                <div>
+                                    <h3 class="font-semibold text-text-primary" data-bind="provider.name">Arjun Singh</h3>
+                                    <p class="text-sm text-text-secondary" data-bind="provider.service">Electrical Services</p>
+                                </div>
+                            </div>
+                            <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs font-medium">Verified</span>
+                        </div>
+
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="flex items-center space-x-1">
+                                <div class="flex text-accent">
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                </div>
+                                <span class="text-sm font-medium text-text-primary" data-bind="provider.rating">4.8</span>
+                                <span class="text-sm text-text-secondary">(<span data-bind="provider.reviewCount">156</span>)</span>
+                            </div>
+                            
+                            <div class="flex items-center text-text-secondary text-sm">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                <span data-bind="provider.distance">2.3 km away</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-text-secondary">Starting from</span>
+                                <span class="text-lg font-semibold text-text-primary" data-bind="provider.price">₹450/hour</span>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium book-service-btn">
+                                Book Service
+                            </button>
+                            <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors view-profile-btn">
+                                <i class="fas fa-eye text-text-secondary"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Provider Cards (4-6) -->
+                <div class="bg-white rounded-xl shadow-material-1 hover:shadow-material-2 transition-shadow cursor-pointer provider-card" data-provider-id="4">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <!-- Professional avatar placeholder -->
+                                <img src="https://images.unsplash.com/photo-1582750433449-648ed127bb54?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face" 
+                                     alt="Provider profile" class="w-12 h-12 rounded-full object-cover" data-mock="true">
+                                <div>
+                                    <h3 class="font-semibold text-text-primary" data-bind="provider.name">Priya Sharma</h3>
+                                    <p class="text-sm text-text-secondary" data-bind="provider.service">Professional Painter</p>
+                                </div>
+                            </div>
+                            <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs font-medium">Verified</span>
+                        </div>
+
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="flex items-center space-x-1">
+                                <div class="flex text-accent">
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                </div>
+                                <span class="text-sm font-medium text-text-primary" data-bind="provider.rating">4.7</span>
+                                <span class="text-sm text-text-secondary">(<span data-bind="provider.reviewCount">94</span>)</span>
+                            </div>
+                            
+                            <div class="flex items-center text-text-secondary text-sm">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                <span data-bind="provider.distance">2.7 km away</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-text-secondary">Starting from</span>
+                                <span class="text-lg font-semibold text-text-primary" data-bind="provider.price">₹400/sqft</span>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium book-service-btn">
+                                Book Service
+                            </button>
+                            <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors view-profile-btn">
+                                <i class="fas fa-eye text-text-secondary"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-material-1 hover:shadow-material-2 transition-shadow cursor-pointer provider-card" data-provider-id="5">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <!-- Professional avatar placeholder -->
+                                <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face" 
+                                     alt="Provider profile" class="w-12 h-12 rounded-full object-cover" data-mock="true">
+                                <div>
+                                    <h3 class="font-semibold text-text-primary" data-bind="provider.name">Rakesh Gupta</h3>
+                                    <p class="text-sm text-text-secondary" data-bind="provider.service">Garden Maintenance</p>
+                                </div>
+                            </div>
+                            <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs font-medium">Verified</span>
+                        </div>
+
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="flex items-center space-x-1">
+                                <div class="flex text-accent">
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="far fa-star text-sm"></i>
+                                </div>
+                                <span class="text-sm font-medium text-text-primary" data-bind="provider.rating">4.5</span>
+                                <span class="text-sm text-text-secondary">(<span data-bind="provider.reviewCount">72</span>)</span>
+                            </div>
+                            
+                            <div class="flex items-center text-text-secondary text-sm">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                <span data-bind="provider.distance">3.1 km away</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-text-secondary">Starting from</span>
+                                <span class="text-lg font-semibold text-text-primary" data-bind="provider.price">₹350/visit</span>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium book-service-btn">
+                                Book Service
+                            </button>
+                            <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors view-profile-btn">
+                                <i class="fas fa-eye text-text-secondary"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-material-1 hover:shadow-material-2 transition-shadow cursor-pointer provider-card" data-provider-id="6">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <!-- Professional avatar placeholder -->
+                                <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face" 
+                                     alt="Provider profile" class="w-12 h-12 rounded-full object-cover" data-mock="true">
+                                <div>
+                                    <h3 class="font-semibold text-text-primary" data-bind="provider.name">Deepak Mehta</h3>
+                                    <p class="text-sm text-text-secondary" data-bind="provider.service">Appliance Repair</p>
+                                </div>
+                            </div>
+                            <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs font-medium">Verified</span>
+                        </div>
+
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="flex items-center space-x-1">
+                                <div class="flex text-accent">
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                </div>
+                                <span class="text-sm font-medium text-text-primary" data-bind="provider.rating">4.9</span>
+                                <span class="text-sm text-text-secondary">(<span data-bind="provider.reviewCount">201</span>)</span>
+                            </div>
+                            
+                            <div class="flex items-center text-text-secondary text-sm">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                <span data-bind="provider.distance">3.5 km away</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-text-secondary">Starting from</span>
+                                <span class="text-lg font-semibold text-text-primary" data-bind="provider.price">₹500/diagnosis</span>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium book-service-btn">
+                                Book Service
+                            </button>
+                            <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors view-profile-btn">
+                                <i class="fas fa-eye text-text-secondary"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- @END_MAP -->
+            </div>
+            <!-- @END_COMPONENT: ProviderGrid -->
+
+            <!-- @COMPONENT: LoadMore -->
+            <div class="text-center mt-12">
+                <button class="bg-white border border-gray-300 text-text-primary px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+                    Load More Providers
+                </button>
+            </div>
+            <!-- @END_COMPONENT: LoadMore -->
+        </div>
+    </section>
+    <!-- @END_COMPONENT: SearchResults -->
+
+    <!-- @COMPONENT: BookingModal -->
+    <div id="bookingModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-material-3 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-text-primary">Book Service</h3>
+                    <button id="closeModal" class="text-text-secondary hover:text-text-primary">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- @COMPONENT: ProviderSummary -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <div class="flex items-center space-x-3">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face" 
+                             alt="Provider" class="w-12 h-12 rounded-full object-cover" data-mock="true">
+                        <div>
+                            <h4 class="font-medium text-text-primary" data-bind="selectedProvider.name">Ramesh Kumar</h4>
+                            <p class="text-sm text-text-secondary" data-bind="selectedProvider.service">Home Cleaning</p>
+                            <div class="flex items-center space-x-1 mt-1">
+                                <div class="flex text-accent text-xs">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <span class="text-xs text-text-secondary">4.9 • 1.2 km away</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: ProviderSummary -->
+
+                <!-- @COMPONENT: BookingForm -->
+                <form id="bookingForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary mb-2">Service Date</label>
+                        <input type="date" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary mb-2">Preferred Time</label>
+                        <select required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">Select time slot</option>
+                            <option value="09:00">9:00 AM - 10:00 AM</option>
+                            <option value="10:00">10:00 AM - 11:00 AM</option>
+                            <option value="11:00">11:00 AM - 12:00 PM</option>
+                            <option value="14:00">2:00 PM - 3:00 PM</option>
+                            <option value="15:00">3:00 PM - 4:00 PM</option>
+                            <option value="16:00">4:00 PM - 5:00 PM</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary mb-2">Service Address</label>
+                        <textarea required placeholder="Enter your complete address..." 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-20"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary mb-2">Additional Requirements</label>
+                        <textarea placeholder="Any specific requirements or instructions..." 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-20"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary mb-2">Contact Number</label>
+                        <input type="tel" required placeholder="+91 XXXXX XXXXX" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+
+                    <!-- @COMPONENT: PriceEstimate -->
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-text-secondary">Estimated Cost</span>
+                            <span class="text-lg font-semibold text-primary" data-bind="estimatedPrice">₹300 - ₹500</span>
+                        </div>
+                        <p class="text-xs text-text-secondary mt-1">Final price will be confirmed by the provider</p>
+                    </div>
+                    <!-- @END_COMPONENT: PriceEstimate -->
+
+                    <div class="flex space-x-3">
+                        <button type="button" id="cancelBooking" 
+                                class="flex-1 bg-gray-100 text-text-primary py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="flex-1 bg-primary text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            Confirm Booking
+                        </button>
+                    </div>
+                </form>
+                <!-- @END_COMPONENT: BookingForm -->
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: BookingModal -->
+
+    <!-- @COMPONENT: ProviderProfileModal -->
+    <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-material-3 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-text-primary">Provider Profile</h3>
+                    <button id="closeProfileModal" class="text-text-secondary hover:text-text-primary">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- @COMPONENT: ProviderProfileContent -->
+                <div class="space-y-6">
+                    <!-- Provider Header -->
+                    <div class="flex items-start space-x-4">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face" 
+                             alt="Provider" class="w-20 h-20 rounded-full object-cover" data-mock="true">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <h4 class="text-xl font-semibold text-text-primary" data-bind="provider.name">Ramesh Kumar</h4>
+                                <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs font-medium">Verified</span>
+                            </div>
+                            <p class="text-text-secondary mb-2" data-bind="provider.service">Professional Home Cleaning Specialist</p>
+                            <div class="flex items-center space-x-4 text-sm">
+                                <div class="flex items-center space-x-1">
+                                    <div class="flex text-accent">
+                                        <i class="fas fa-star text-sm"></i>
+                                        <i class="fas fa-star text-sm"></i>
+                                        <i class="fas fa-star text-sm"></i>
+                                        <i class="fas fa-star text-sm"></i>
+                                        <i class="fas fa-star text-sm"></i>
+                                    </div>
+                                    <span class="font-medium">4.9</span>
+                                    <span class="text-text-secondary">(127 reviews)</span>
+                                </div>
+                                <div class="flex items-center text-text-secondary">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>
+                                    <span>1.2 km away</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- About -->
+                    <div>
+                        <h5 class="font-semibold text-text-primary mb-3">About</h5>
+                        <p class="text-text-secondary text-sm leading-relaxed" data-mock="true">
+                            With over 8 years of experience in professional cleaning services, I provide thorough and reliable home cleaning solutions. I use eco-friendly products and ensure customer satisfaction with every service.
+                        </p>
+                    </div>
+
+                    <!-- Services & Pricing -->
+                    <div>
+                        <h5 class="font-semibold text-text-primary mb-3">Services & Pricing</h5>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg" data-mock="true">
+                                <div>
+                                    <span class="font-medium text-text-primary">Regular House Cleaning</span>
+                                    <p class="text-sm text-text-secondary">Deep cleaning of all rooms</p>
+                                </div>
+                                <span class="font-semibold text-primary">₹300/hour</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg" data-mock="true">
+                                <div>
+                                    <span class="font-medium text-text-primary">Deep Cleaning</span>
+                                    <p class="text-sm text-text-secondary">Comprehensive cleaning service</p>
+                                </div>
+                                <span class="font-semibold text-primary">₹500/session</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Reviews -->
+                    <div>
+                        <h5 class="font-semibold text-text-primary mb-3">Recent Reviews</h5>
+                        <div class="space-y-4">
+                            <div class="border-l-4 border-primary pl-4" data-mock="true">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="font-medium text-text-primary text-sm">Priya S.</span>
+                                    <div class="flex text-accent text-xs">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-text-secondary leading-relaxed">
+                                    "Excellent service! Very thorough and professional. My house was spotless after the cleaning."
+                                </p>
+                                <span class="text-xs text-text-secondary">2 days ago</span>
+                            </div>
+                            <div class="border-l-4 border-primary pl-4" data-mock="true">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="font-medium text-text-primary text-sm">Amit K.</span>
+                                    <div class="flex text-accent text-xs">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-text-secondary leading-relaxed">
+                                    "Reliable and punctual. Uses good quality cleaning products. Highly recommended!"
+                                </p>
+                                <span class="text-xs text-text-secondary">1 week ago</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-3 pt-4 border-t">
+                        <button class="flex-1 bg-primary text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            Book Service
+                        </button>
+                        <button class="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-phone text-text-secondary"></i>
+                        </button>
+                        <button class="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-message text-text-secondary"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: ProviderProfileContent -->
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: ProviderProfileModal -->
+
+    <!-- @COMPONENT: Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                            <i class="fas fa-tools text-white text-lg"></i>
+                        </div>
+                        <span class="text-xl font-semibold text-text-primary">ServiceHub</span>
+                    </div>
+                    <p class="text-text-secondary text-sm leading-relaxed max-w-md">
+                        Connect with trusted local service providers for all your home and business needs. 
+                        Quality service, verified professionals, transparent pricing.
+                    </p>
+                </div>
+                
+                <div>
+                    <h6 class="font-semibold text-text-primary mb-4">Services</h6>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="text-text-secondary hover:text-primary transition-colors">Home Cleaning</a></li>
+                        <li><a href="#" class="text-text-secondary hover:text-primary transition-colors">Plumbing</a></li>
+                        <li><a href="#" class="text-text-secondary hover:text-primary transition-colors">Electrical</a></li>
+                        <li><a href="#" class="text-text-secondary hover:text-primary transition-colors">Painting</a></li>
+                        <li><a href="#" class="text-text-secondary hover:text-primary transition-colors">Gardening</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h6 class="font-semibold text-text-primary mb-4">Support</h6>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="text-text-secondary hover:text-primary transition-colors">Help Center</a></li>
+                        <li><a href="#" class="text-text-secondary hover:text-primary transition-colors">Contact Us</a></li>
+                        <li><a href="#" class="text-text-secondary hover:text-primary transition-colors">Terms of Service</a></li>
+                        <li><a href="#" class="text-text-secondary hover:text-primary transition-colors">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-8 mt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <p class="text-text-secondary text-sm">© 2024 ServiceHub. All rights reserved.</p>
+                    <div class="flex space-x-4 mt-4 md:mt-0">
+                        <a href="#" class="text-text-secondary hover:text-primary transition-colors">
+                            <i class="fab fa-facebook text-lg"></i>
+                        </a>
+                        <a href="#" class="text-text-secondary hover:text-primary transition-colors">
+                            <i class="fab fa-twitter text-lg"></i>
+                        </a>
+                        <a href="#" class="text-text-secondary hover:text-primary transition-colors">
+                            <i class="fab fa-instagram text-lg"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- @END_COMPONENT: Footer -->
+
+    <!-- @COMPONENT: LoadingOverlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white bg-opacity-90 z-50 hidden items-center justify-center">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p class="text-text-secondary">Finding providers near you...</p>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: LoadingOverlay -->
+
+    <script>
+        // @STATE: currentLocation:object = null, selectedProvider:object = null, searchResults:array = []
+        
+        (function() {
+            let currentLocation = null;
+            let selectedProvider = null;
+            let searchResults = [];
+
+            // DOM elements
+            const locationBtn = document.getElementById('locationBtn');
+            const searchBtn = document.getElementById('searchBtn');
+            const serviceSelect = document.getElementById('serviceSelect');
+            const bookingModal = document.getElementById('bookingModal');
+            const profileModal = document.getElementById('profileModal');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const closeModal = document.getElementById('closeModal');
+            const closeProfileModal = document.getElementById('closeProfileModal');
+            const cancelBooking = document.getElementById('cancelBooking');
+
+            // @FUNCTIONALITY: Geolocation handling
+            locationBtn.addEventListener('click', function() {
+                if (!navigator.geolocation) {
+                    alert('Geolocation is not supported by this browser.');
+                    return;
+                }
+
+                loadingOverlay.classList.remove('hidden');
+                loadingOverlay.classList.add('flex');
+
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        currentLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        
+                        // TODO: Reverse geocoding to get address
+                        const locationInput = document.querySelector('input[placeholder="Enter your location"]');
+                        locationInput.value = `${currentLocation.lat.toFixed(4)}, ${currentLocation.lng.toFixed(4)}`;
+                        
+                        loadingOverlay.classList.add('hidden');
+                        loadingOverlay.classList.remove('flex');
+                        
+                        // TODO: Implement automatic search if service is selected
+                    },
+                    function(error) {
+                        loadingOverlay.classList.add('hidden');
+                        loadingOverlay.classList.remove('flex');
+                        alert('Error getting location: ' + error.message);
+                    }
+                );
+            });
+
+            // @FUNCTIONALITY: Service search
+            searchBtn.addEventListener('click', function() {
+                const serviceValue = serviceSelect.value;
+                if (!serviceValue) {
+                    alert('Please select a service type');
+                    return;
+                }
+
+                if (!currentLocation) {
+                    alert('Please allow location access or enter your location manually');
+                    return;
+                }
+
+                loadingOverlay.classList.remove('hidden');
+                loadingOverlay.classList.add('flex');
+
+                // TODO: Implement API call to /search endpoint
+                // const searchData = {
+                //     lat: currentLocation.lat,
+                //     lon: currentLocation.lng,
+                //     service_id: serviceValue
+                // };
+                
+                // Simulate API delay
+                setTimeout(() => {
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                    // Results are already displayed in the mockup
+                }, 1500);
+            });
+
+            // @FUNCTIONALITY: Book service buttons
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('book-service-btn')) {
+                    const providerCard = e.target.closest('.provider-card');
+                    const providerId = providerCard.dataset.providerId;
+                    
+                    // TODO: Get provider data from search results
+                    selectedProvider = {
+                        id: providerId,
+                        name: providerCard.querySelector('h3').textContent,
+                        service: providerCard.querySelector('p').textContent
+                    };
+
+                    bookingModal.classList.remove('hidden');
+                    bookingModal.classList.add('flex');
+                }
+
+                if (e.target.classList.contains('view-profile-btn')) {
+                    const providerCard = e.target.closest('.provider-card');
+                    const providerId = providerCard.dataset.providerId;
+                    
+                    // TODO: Load provider profile data
+                    profileModal.classList.remove('hidden');
+                    profileModal.classList.add('flex');
+                }
+            });
+
+            // @FUNCTIONALITY: Modal controls
+            closeModal.addEventListener('click', function() {
+                bookingModal.classList.add('hidden');
+                bookingModal.classList.remove('flex');
+            });
+
+            closeProfileModal.addEventListener('click', function() {
+                profileModal.classList.add('hidden');
+                profileModal.classList.remove('flex');
+            });
+
+            cancelBooking.addEventListener('click', function() {
+                bookingModal.classList.add('hidden');
+                bookingModal.classList.remove('flex');
+            });
+
+            // @FUNCTIONALITY: Booking form submission
+            document.getElementById('bookingForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // TODO: Implement booking creation API call
+                // const formData = new FormData(e.target);
+                // const bookingData = {
+                //     client_id: 'current_user_id',
+                //     provider_id: selectedProvider.id,
+                //     service_id: serviceSelect.value,
+                //     scheduled_start: formData.get('date') + 'T' + formData.get('time'),
+                //     address: formData.get('address'),
+                //     requirements: formData.get('requirements'),
+                //     contact: formData.get('contact')
+                // };
+
+                bookingModal.classList.add('hidden');
+                bookingModal.classList.remove('flex');
+                
+                alert('Booking request submitted successfully! The provider will contact you shortly.');
+            });
+
+            // @FUNCTIONALITY: Close modals on outside click
+            window.addEventListener('click', function(e) {
+                if (e.target === bookingModal) {
+                    bookingModal.classList.add('hidden');
+                    bookingModal.classList.remove('flex');
+                }
+                if (e.target === profileModal) {
+                    profileModal.classList.add('hidden');
+                    profileModal.classList.remove('flex');
+                }
+            });
+
+            // @FUNCTIONALITY: Load services from API
+            // TODO: Implement API call to /services endpoint
+            // async function loadServices() {
+            //     try {
+            //         const response = await fetch('/services');
+            //         const services = await response.json();
+            //         
+            //         serviceSelect.innerHTML = '<option value="">Select a service...</option>';
+            //         services.forEach(service => {
+            //             const option = document.createElement('option');
+            //             option.value = service.service_id;
+            //             option.textContent = service.display_name;
+            //             serviceSelect.appendChild(option);
+            //         });
+            //     } catch (error) {
+            //         console.error('Error loading services:', error);
+            //     }
+            // }
+            
+            // loadServices();
+        })();
+    </script>
+</body>
+</html>
