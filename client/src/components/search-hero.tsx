@@ -82,72 +82,142 @@ export default function SearchHero({ services, onSearch, isSearching, servicesLo
   };
 
   return (
-    <section className="bg-gradient-to-br from-primary to-blue-700 text-white py-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-          Find Trusted Local Service Providers
-        </h1>
-        <p className="text-xl mb-8 text-blue-100">
-          Connect with verified professionals near you for home services, repairs, and more
-        </p>
+    <section className="relative bg-gradient-hero text-white py-20 lg:py-28 overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-400/10 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12 fade-in">
+          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium mb-6">
+            <i className="fas fa-star text-yellow-300"></i>
+            <span>Trusted by 10,000+ customers</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            Find <span className="text-transparent bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text">Expert</span>
+            <br />Service Providers
+          </h1>
+          <p className="text-xl md:text-2xl mb-4 text-blue-100 max-w-3xl mx-auto font-light">
+            Connect with verified professionals near you for home services, repairs, and maintenance
+          </p>
+          <div className="flex items-center justify-center gap-6 text-sm text-blue-200 mb-8">
+            <div className="flex items-center gap-2">
+              <i className="fas fa-shield-alt text-green-400"></i>
+              <span>Verified Professionals</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <i className="fas fa-clock text-blue-300"></i>
+              <span>Same-day Service</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <i className="fas fa-money-bill-wave text-green-300"></i>
+              <span>Fair Pricing</span>
+            </div>
+          </div>
+        </div>
         
-        <div className="bg-white rounded-xl shadow-material-3 p-6 text-left max-w-2xl mx-auto">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-text-primary mb-2">Service Type</label>
+        <div className="glass-card rounded-2xl p-8 max-w-4xl mx-auto slide-up">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+            {/* Service Selection */}
+            <div className="lg:col-span-4">
+              <label className="block text-sm font-semibold text-text-primary mb-3">
+                <i className="fas fa-wrench mr-2 text-primary"></i>
+                What service do you need?
+              </label>
               <Select value={selectedService} onValueChange={setSelectedService} disabled={servicesLoading}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full h-12 rounded-xl border-2 shadow-soft hover:shadow-medium transition-all duration-300">
                   <SelectValue placeholder={servicesLoading ? "Loading services..." : "Select a service..."} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl shadow-xl border-0">
                   {services.map((service) => (
-                    <SelectItem key={service.id} value={service.id}>
-                      {service.displayName}
+                    <SelectItem key={service.id} value={service.id} className="rounded-lg">
+                      <div className="flex items-center gap-3 py-1">
+                        <span className="text-2xl">{service.displayName.split(' ')[0]}</span>
+                        <span className="font-medium">{service.displayName.split(' ').slice(1).join(' ')}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-text-primary mb-2">Location</label>
+            {/* Location Input */}
+            <div className="lg:col-span-5">
+              <label className="block text-sm font-semibold text-text-primary mb-3">
+                <i className="fas fa-map-marker-alt mr-2 text-red-500"></i>
+                Where do you need service?
+              </label>
               <div className="relative">
                 <Input
                   type="text"
-                  placeholder="Enter your location"
+                  placeholder="Enter your location or use GPS"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="pr-12"
+                  className="h-12 pr-14 rounded-xl border-2 shadow-soft hover:shadow-medium transition-all duration-300 text-base"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 text-primary hover:text-blue-700"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 rounded-lg hover:bg-primary/10 transition-all duration-300"
                   onClick={handleGetLocation}
                   disabled={gettingLocation}
                 >
                   {gettingLocation ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   ) : (
-                    <MapPin className="h-4 w-4" />
+                    <MapPin className="h-5 w-5 text-primary" />
                   )}
                 </Button>
               </div>
+              {currentLocation && (
+                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                  <i className="fas fa-check-circle"></i>
+                  Location detected successfully
+                </p>
+              )}
             </div>
             
-            <Button
-              onClick={handleSearch}
-              disabled={isSearching || !selectedService || !currentLocation}
-              className="bg-primary text-white hover:bg-blue-700 md:mt-7"
-            >
-              {isSearching ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Search className="h-4 w-4 mr-2" />
-              )}
-              Search
-            </Button>
+            {/* Search Button */}
+            <div className="lg:col-span-3">
+              <Button
+                onClick={handleSearch}
+                disabled={isSearching || !selectedService || !currentLocation}
+                className="w-full h-12 btn-gradient rounded-xl text-base font-semibold shadow-soft hover:shadow-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSearching ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-5 w-5 mr-2" />
+                    Find Providers
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+          
+          {/* Popular Services */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <p className="text-sm font-medium text-text-secondary mb-3">Popular services:</p>
+            <div className="flex flex-wrap gap-2">
+              {services.slice(0, 4).map((service) => (
+                <button
+                  key={service.id}
+                  onClick={() => setSelectedService(service.id)}
+                  className="px-4 py-2 text-sm bg-white/50 hover:bg-white/80 rounded-full border border-gray-200 transition-all duration-300 hover:scale-105 font-medium"
+                >
+                  {service.displayName}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

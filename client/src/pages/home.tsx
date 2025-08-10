@@ -91,28 +91,37 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-white shadow-material-1 sticky top-0 z-50">
+      <header className="bg-glass shadow-soft sticky top-0 z-50 border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <i className="fas fa-tools text-white text-lg"></i>
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center space-x-4 fade-in">
+              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-soft">
+                <i className="fas fa-tools text-white text-xl"></i>
               </div>
-              <span className="text-xl font-semibold text-text-primary">ServiceHub</span>
+              <div>
+                <span className="text-2xl font-bold text-text-primary">ServiceHub</span>
+                <p className="text-sm text-text-secondary font-medium">Professional Services</p>
+              </div>
             </div>
             
-            <nav className="hidden md:flex items-center space-x-6">
-              <a href="#" className="text-text-secondary hover:text-primary transition-colors">Services</a>
-              <a href="#" className="text-text-secondary hover:text-primary transition-colors">How it works</a>
-              <a href="#" className="text-text-secondary hover:text-primary transition-colors">Support</a>
-              <Button className="bg-primary text-white hover:bg-blue-700">
-                Sign In
-              </Button>
+            <nav className="hidden lg:flex items-center space-x-8">
+              <a href="#" className="text-text-secondary hover:text-primary transition-all duration-300 font-medium hover:scale-105">Services</a>
+              <a href="#" className="text-text-secondary hover:text-primary transition-all duration-300 font-medium hover:scale-105">How it works</a>
+              <a href="#" className="text-text-secondary hover:text-primary transition-all duration-300 font-medium hover:scale-105">For Providers</a>
+              <a href="#" className="text-text-secondary hover:text-primary transition-all duration-300 font-medium hover:scale-105">Support</a>
+              <div className="flex items-center space-x-3">
+                <Button variant="ghost" className="text-text-primary hover:text-primary font-medium">
+                  Sign In
+                </Button>
+                <Button className="btn-gradient px-6 py-2 rounded-xl font-semibold">
+                  Get Started
+                </Button>
+              </div>
             </nav>
             
-            <Button variant="ghost" className="md:hidden text-text-primary">
+            <Button variant="ghost" className="lg:hidden text-text-primary hover:bg-white/50">
               <i className="fas fa-bars text-xl"></i>
             </Button>
           </div>
@@ -127,22 +136,102 @@ export default function Home() {
         servicesLoading={servicesLoading}
       />
 
+      {/* Features Section */}
+      {searchResults.length === 0 && (
+        <section className="py-20 bg-white/50 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16 fade-in">
+              <h2 className="text-4xl font-bold text-text-primary mb-4">
+                Why Choose ServiceHub?
+              </h2>
+              <p className="text-xl text-text-secondary max-w-3xl mx-auto font-light">
+                Experience seamless service booking with verified professionals, transparent pricing, and guaranteed satisfaction
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+              <div className="text-center group slide-up">
+                <div className="w-20 h-20 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft group-hover:shadow-medium transition-all duration-300 group-hover:scale-110">
+                  <i className="fas fa-shield-check text-3xl text-white"></i>
+                </div>
+                <h3 className="text-2xl font-bold text-text-primary mb-3">Verified Professionals</h3>
+                <p className="text-text-secondary leading-relaxed">
+                  All our service providers are thoroughly vetted, background-checked, and verified for your peace of mind.
+                </p>
+              </div>
+
+              <div className="text-center group slide-up" style={{animationDelay: '0.2s'}}>
+                <div className="w-20 h-20 bg-gradient-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft group-hover:shadow-medium transition-all duration-300 group-hover:scale-110">
+                  <i className="fas fa-clock text-3xl text-white"></i>
+                </div>
+                <h3 className="text-2xl font-bold text-text-primary mb-3">Quick Response</h3>
+                <p className="text-text-secondary leading-relaxed">
+                  Get instant quotes and same-day service availability. Most bookings are confirmed within minutes.
+                </p>
+              </div>
+
+              <div className="text-center group slide-up" style={{animationDelay: '0.4s'}}>
+                <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft group-hover:shadow-medium transition-all duration-300 group-hover:scale-110">
+                  <i className="fas fa-star text-3xl text-white"></i>
+                </div>
+                <h3 className="text-2xl font-bold text-text-primary mb-3">Quality Guaranteed</h3>
+                <p className="text-text-secondary leading-relaxed">
+                  100% satisfaction guarantee with transparent pricing and quality workmanship on every service.
+                </p>
+              </div>
+            </div>
+
+            {/* Service Categories */}
+            <div className="text-center mb-12">
+              <h3 className="text-3xl font-bold text-text-primary mb-8">Popular Services</h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+                {services?.slice(0, 5).map((service, index) => (
+                  <div key={service.id} className="glass-card rounded-2xl p-6 text-center hover-lift group cursor-pointer">
+                    <div className="w-16 h-16 bg-gradient-primary rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <i className={`fas ${
+                        service.displayName.includes('Cleaning') ? 'fa-spray-can' :
+                        service.displayName.includes('Plumbing') ? 'fa-wrench' :
+                        service.displayName.includes('Electrical') ? 'fa-bolt' :
+                        service.displayName.includes('Painting') ? 'fa-paint-roller' :
+                        'fa-leaf'
+                      } text-2xl text-white`}></i>
+                    </div>
+                    <h4 className="font-bold text-text-primary group-hover:text-primary transition-colors">
+                      {service.displayName}
+                    </h4>
+                  </div>
+                )) || []}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Search Results */}
       {searchResults.length > 0 && (
-        <section className="py-12">
+        <section className="py-16 slide-up">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h2 className="text-2xl font-semibold text-text-primary">Available Providers</h2>
-                <p className="text-text-secondary mt-1">Showing {searchResults.length} providers near you</p>
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-10">
+              <div className="mb-6 lg:mb-0">
+                <h2 className="text-3xl font-bold text-text-primary mb-2">
+                  Available Providers
+                </h2>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-gradient-primary rounded-full animate-pulse"></div>
+                  <p className="text-text-secondary font-medium">
+                    Found {searchResults.length} trusted professionals near you
+                  </p>
+                </div>
               </div>
               
-              <div className="flex items-center space-x-4">
-                <label className="text-sm text-text-secondary">Sort by:</label>
-                <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary">
+              <div className="flex items-center space-x-4 glass-card px-4 py-3 rounded-xl">
+                <i className="fas fa-sort text-text-secondary"></i>
+                <label className="text-sm font-medium text-text-secondary">Sort by:</label>
+                <select className="bg-transparent border-none text-sm font-medium text-text-primary focus:outline-none cursor-pointer">
                   <option>Distance</option>
                   <option>Rating</option>
                   <option>Price</option>
+                  <option>Reviews</option>
                 </select>
               </div>
             </div>
@@ -184,57 +273,135 @@ export default function Home() {
       />
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <footer className="bg-gradient-to-r from-slate-900 to-gray-800 text-white mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                  <i className="fas fa-tools text-white text-lg"></i>
+              <div className="flex items-center space-x-4 mb-6">
+                <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-soft">
+                  <i className="fas fa-tools text-white text-xl"></i>
                 </div>
-                <span className="text-xl font-semibold text-text-primary">ServiceHub</span>
+                <div>
+                  <span className="text-2xl font-bold">ServiceHub</span>
+                  <p className="text-gray-300 text-sm">Professional Services</p>
+                </div>
               </div>
-              <p className="text-text-secondary text-sm leading-relaxed max-w-md">
+              <p className="text-gray-300 leading-relaxed max-w-md mb-6">
                 Connect with trusted local service providers for all your home and business needs. 
-                Quality service, verified professionals, transparent pricing.
+                Experience quality service, verified professionals, and transparent pricing.
               </p>
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <i className="fas fa-users text-blue-400"></i>
+                  <span className="text-sm text-gray-300">10,000+ Customers</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <i className="fas fa-star text-yellow-400"></i>
+                  <span className="text-sm text-gray-300">4.9/5 Rating</span>
+                </div>
+              </div>
             </div>
             
             <div>
-              <h6 className="font-semibold text-text-primary mb-4">Services</h6>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-text-secondary hover:text-primary transition-colors">Home Cleaning</a></li>
-                <li><a href="#" className="text-text-secondary hover:text-primary transition-colors">Plumbing</a></li>
-                <li><a href="#" className="text-text-secondary hover:text-primary transition-colors">Electrical</a></li>
-                <li><a href="#" className="text-text-secondary hover:text-primary transition-colors">Painting</a></li>
-                <li><a href="#" className="text-text-secondary hover:text-primary transition-colors">Gardening</a></li>
+              <h6 className="font-bold text-white mb-6 text-lg">Popular Services</h6>
+              <ul className="space-y-3">
+                <li>
+                  <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2 group">
+                    <i className="fas fa-spray-can text-blue-400 group-hover:text-blue-300 transition-colors"></i>
+                    Home Cleaning
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2 group">
+                    <i className="fas fa-wrench text-green-400 group-hover:text-green-300 transition-colors"></i>
+                    Plumbing Services
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2 group">
+                    <i className="fas fa-bolt text-yellow-400 group-hover:text-yellow-300 transition-colors"></i>
+                    Electrical Work
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2 group">
+                    <i className="fas fa-paint-roller text-purple-400 group-hover:text-purple-300 transition-colors"></i>
+                    Painting & Decor
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2 group">
+                    <i className="fas fa-leaf text-emerald-400 group-hover:text-emerald-300 transition-colors"></i>
+                    Garden Services
+                  </a>
+                </li>
               </ul>
             </div>
             
             <div>
-              <h6 className="font-semibold text-text-primary mb-4">Support</h6>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-text-secondary hover:text-primary transition-colors">Help Center</a></li>
-                <li><a href="#" className="text-text-secondary hover:text-primary transition-colors">Contact Us</a></li>
-                <li><a href="#" className="text-text-secondary hover:text-primary transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="text-text-secondary hover:text-primary transition-colors">Privacy Policy</a></li>
+              <h6 className="font-bold text-white mb-6 text-lg">Support & Legal</h6>
+              <ul className="space-y-3">
+                <li>
+                  <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                    <i className="fas fa-question-circle text-blue-400"></i>
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                    <i className="fas fa-headset text-green-400"></i>
+                    Contact Support
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                    <i className="fas fa-file-contract text-orange-400"></i>
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                    <i className="fas fa-shield-alt text-purple-400"></i>
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                    <i className="fas fa-user-tie text-indigo-400"></i>
+                    Become a Provider
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
           
-          <div className="border-t border-gray-200 pt-8 mt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <p className="text-text-secondary text-sm">© 2024 ServiceHub. All rights reserved.</p>
-              <div className="flex space-x-4 mt-4 md:mt-0">
-                <a href="#" className="text-text-secondary hover:text-primary transition-colors">
-                  <i className="fab fa-facebook text-lg"></i>
-                </a>
-                <a href="#" className="text-text-secondary hover:text-primary transition-colors">
-                  <i className="fab fa-twitter text-lg"></i>
-                </a>
-                <a href="#" className="text-text-secondary hover:text-primary transition-colors">
-                  <i className="fab fa-instagram text-lg"></i>
-                </a>
+          <div className="border-t border-gray-700 pt-8">
+            <div className="flex flex-col lg:flex-row justify-between items-center">
+              <div className="flex flex-col lg:flex-row items-center gap-4 mb-6 lg:mb-0">
+                <p className="text-gray-400">© 2024 ServiceHub. All rights reserved.</p>
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <span>Made with</span>
+                  <i className="fas fa-heart text-red-400"></i>
+                  <span>for better services</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-6">
+                <span className="text-gray-400 text-sm font-medium">Follow us:</span>
+                <div className="flex space-x-4">
+                  <a href="#" className="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110">
+                    <i className="fab fa-facebook-f text-white"></i>
+                  </a>
+                  <a href="#" className="w-10 h-10 bg-blue-400 hover:bg-blue-500 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110">
+                    <i className="fab fa-twitter text-white"></i>
+                  </a>
+                  <a href="#" className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110">
+                    <i className="fab fa-instagram text-white"></i>
+                  </a>
+                  <a href="#" className="w-10 h-10 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110">
+                    <i className="fab fa-whatsapp text-white"></i>
+                  </a>
+                </div>
               </div>
             </div>
           </div>

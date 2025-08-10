@@ -62,79 +62,147 @@ export default function ProviderGrid({ providers, onBookService, onViewProfile }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
       {providers.map((provider, index) => {
         const primaryService = provider.services[0];
         
         return (
-          <div key={provider.id} className="bg-white rounded-xl shadow-material-1 hover:shadow-material-2 transition-shadow cursor-pointer">
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <img 
-                    src={getAvatarUrl(provider.displayName, index)}
-                    alt={`${provider.displayName} profile`}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <h3 className="font-semibold text-text-primary">{provider.displayName}</h3>
-                    <p className="text-sm text-text-secondary">
-                      {primaryService?.service.displayName || "Service Provider"}
-                    </p>
+          <div key={provider.id} className="group glass-card rounded-2xl hover-lift overflow-hidden">
+            {/* Card Header with Gradient */}
+            <div className="bg-gradient-primary p-1 rounded-t-2xl">
+              <div className="bg-white rounded-t-xl p-6 pb-4">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <img 
+                        src={getAvatarUrl(provider.displayName, index)}
+                        alt={`${provider.displayName} profile`}
+                        className="w-16 h-16 rounded-2xl object-cover shadow-soft ring-4 ring-white"
+                      />
+                      {provider.verified && (
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-soft">
+                          <i className="fas fa-check text-white text-xs"></i>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-text-primary mb-1 group-hover:text-primary transition-colors">
+                        {provider.displayName}
+                      </h3>
+                      <p className="text-sm text-text-secondary font-medium flex items-center gap-2">
+                        <i className="fas fa-toolbox text-primary/70"></i>
+                        {primaryService?.service.displayName || "Service Provider"}
+                      </p>
+                    </div>
                   </div>
+                  
+                  {provider.verified && (
+                    <Badge className="bg-gradient-secondary text-white border-0 shadow-soft font-medium">
+                      <i className="fas fa-shield-alt mr-1"></i>
+                      Verified
+                    </Badge>
+                  )}
                 </div>
-                {provider.verified && (
-                  <Badge className="bg-success/10 text-success hover:bg-success/20">
-                    Verified
-                  </Badge>
-                )}
-              </div>
 
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="flex items-center space-x-1">
-                  <div className="flex">
-                    {renderStars(provider.ratingAvg)}
+                {/* Rating and Distance */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1 bg-yellow-50 px-3 py-1 rounded-full">
+                      <div className="flex">
+                        {renderStars(provider.ratingAvg)}
+                      </div>
+                      <span className="text-sm font-bold text-text-primary ml-1">
+                        {provider.ratingAvg.toFixed(1)}
+                      </span>
+                    </div>
+                    <span className="text-sm text-text-secondary font-medium">
+                      ({provider.reviewCount} reviews)
+                    </span>
                   </div>
-                  <span className="text-sm font-medium text-text-primary">
-                    {provider.ratingAvg.toFixed(1)}
-                  </span>
-                  <span className="text-sm text-text-secondary">
-                    ({provider.reviewCount})
-                  </span>
                 </div>
                 
-                <div className="flex items-center text-text-secondary text-sm">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  <span>{provider.distance.toFixed(1)} km away</span>
+                <div className="flex items-center justify-between text-text-secondary text-sm mb-4">
+                  <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
+                    <MapPin className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium">{provider.distance.toFixed(1)} km away</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-green-600">
+                    <i className="fas fa-clock"></i>
+                    <span className="text-sm font-medium">Available today</span>
+                  </div>
                 </div>
               </div>
+            </div>
 
+            {/* Card Body */}
+            <div className="p-6 pt-0">
+              {/* Pricing */}
               {primaryService && (
-                <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-100">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-text-secondary">Starting from</span>
-                    <span className="text-lg font-semibold text-text-primary">
-                      ₹{primaryService.basePrice}/{primaryService.priceUnit.replace('per_', '')}
-                    </span>
+                    <div>
+                      <span className="text-sm text-text-secondary font-medium">Starting from</span>
+                      <p className="text-xs text-text-secondary mt-1">
+                        <i className="fas fa-info-circle mr-1"></i>
+                        Final price may vary
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-primary">
+                        ₹{primaryService.basePrice}
+                      </div>
+                      <div className="text-sm text-text-secondary font-medium">
+                        per {primaryService.priceUnit.replace('per_', '')}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div className="flex space-x-2">
+              {/* Service Features */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="flex items-center gap-2 text-sm">
+                  <i className="fas fa-calendar-check text-green-500"></i>
+                  <span className="text-text-secondary">Same-day booking</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <i className="fas fa-money-bill-wave text-blue-500"></i>
+                  <span className="text-text-secondary">Fair pricing</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <i className="fas fa-tools text-purple-500"></i>
+                  <span className="text-text-secondary">Own equipment</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <i className="fas fa-thumbs-up text-orange-500"></i>
+                  <span className="text-text-secondary">100% satisfaction</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3">
                 <Button 
-                  className="flex-1 bg-primary text-white hover:bg-blue-700"
+                  className="flex-1 btn-gradient h-12 rounded-xl font-semibold text-base shadow-soft"
                   onClick={() => primaryService && onBookService(provider, primaryService.service)}
                 >
-                  Book Service
+                  <i className="fas fa-calendar-plus mr-2"></i>
+                  Book Now
                 </Button>
                 <Button 
                   variant="outline"
-                  size="icon"
                   onClick={() => onViewProfile(provider)}
-                  className="hover:bg-gray-50"
+                  className="px-4 h-12 rounded-xl border-2 hover:bg-gray-50 hover:border-primary transition-all duration-300"
                 >
-                  <Eye className="w-4 h-4 text-text-secondary" />
+                  <Eye className="w-5 h-5 text-text-secondary group-hover:text-primary transition-colors" />
                 </Button>
+              </div>
+
+              {/* Quick Contact */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs text-text-secondary text-center">
+                  <i className="fas fa-phone mr-1 text-green-500"></i>
+                  Quick response • Professional service • Insured work
+                </p>
               </div>
             </div>
           </div>
