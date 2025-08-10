@@ -69,7 +69,7 @@ export default function ProviderGrid({ providers, onBookService, onViewProfile }
         return (
           <div key={provider.id} className="group glass-card rounded-2xl hover-lift overflow-hidden">
             {/* Card Header with Gradient */}
-            <div className="bg-gradient-primary p-1 rounded-t-2xl">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-1 rounded-t-2xl">
               <div className="bg-white rounded-t-xl p-6 pb-4">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-4">
@@ -97,7 +97,7 @@ export default function ProviderGrid({ providers, onBookService, onViewProfile }
                   </div>
                   
                   {provider.verified && (
-                    <Badge className="bg-gradient-secondary text-white border-0 shadow-soft font-medium">
+                    <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-0 shadow-soft font-medium">
                       <i className="fas fa-shield-alt mr-1"></i>
                       Verified
                     </Badge>
@@ -122,11 +122,11 @@ export default function ProviderGrid({ providers, onBookService, onViewProfile }
                 </div>
                 
                 <div className="flex items-center justify-between text-text-secondary text-sm mb-4">
-                  <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
-                    <MapPin className="w-4 h-4 text-blue-600" />
-                    <span className="font-medium">{provider.distance.toFixed(1)} km away</span>
+                  <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                    <MapPin className="w-4 h-4 text-indigo-600" />
+                    <span className="font-medium text-indigo-700">{provider.distance.toFixed(1)} km away</span>
                   </div>
-                  <div className="flex items-center gap-2 text-green-600">
+                  <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
                     <i className="fas fa-clock"></i>
                     <span className="text-sm font-medium">Available today</span>
                   </div>
@@ -138,20 +138,20 @@ export default function ProviderGrid({ providers, onBookService, onViewProfile }
             <div className="p-6 pt-0">
               {/* Pricing */}
               {primaryService && (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-100">
+                <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-xl p-5 mb-6 border border-gray-200">
                   <div className="flex justify-between items-center">
                     <div>
-                      <span className="text-sm text-text-secondary font-medium">Starting from</span>
-                      <p className="text-xs text-text-secondary mt-1">
-                        <i className="fas fa-info-circle mr-1"></i>
+                      <span className="text-sm text-slate-600 font-semibold">Starting from</span>
+                      <p className="text-xs text-slate-500 mt-1 flex items-center">
+                        <i className="fas fa-info-circle mr-1 text-slate-400"></i>
                         Final price may vary
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-primary">
+                      <div className="text-2xl font-bold text-slate-800">
                         ₹{primaryService.basePrice}
                       </div>
-                      <div className="text-sm text-text-secondary font-medium">
+                      <div className="text-sm text-slate-600 font-medium">
                         per {primaryService.priceUnit.replace('per_', '')}
                       </div>
                     </div>
@@ -162,20 +162,20 @@ export default function ProviderGrid({ providers, onBookService, onViewProfile }
               {/* Service Features */}
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <div className="flex items-center gap-2 text-sm">
-                  <i className="fas fa-calendar-check text-green-500"></i>
-                  <span className="text-text-secondary">Same-day booking</span>
+                  <i className="fas fa-calendar-check text-emerald-600"></i>
+                  <span className="text-slate-600 font-medium">Same-day booking</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <i className="fas fa-money-bill-wave text-blue-500"></i>
-                  <span className="text-text-secondary">Fair pricing</span>
+                  <i className="fas fa-money-bill-wave text-indigo-600"></i>
+                  <span className="text-slate-600 font-medium">Fair pricing</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <i className="fas fa-tools text-purple-500"></i>
-                  <span className="text-text-secondary">Own equipment</span>
+                  <i className="fas fa-tools text-purple-600"></i>
+                  <span className="text-slate-600 font-medium">Own equipment</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <i className="fas fa-thumbs-up text-orange-500"></i>
-                  <span className="text-text-secondary">100% satisfaction</span>
+                  <i className="fas fa-thumbs-up text-amber-600"></i>
+                  <span className="text-slate-600 font-medium">100% satisfaction</span>
                 </div>
               </div>
 

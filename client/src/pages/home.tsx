@@ -151,31 +151,31 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
               <div className="text-center group slide-up">
-                <div className="w-20 h-20 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft group-hover:shadow-medium transition-all duration-300 group-hover:scale-110">
+                <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft group-hover:shadow-large transition-all duration-300 group-hover:scale-110">
                   <i className="fas fa-shield-check text-3xl text-white"></i>
                 </div>
-                <h3 className="text-2xl font-bold text-text-primary mb-3">Verified Professionals</h3>
-                <p className="text-text-secondary leading-relaxed">
+                <h3 className="text-2xl font-bold text-slate-800 mb-3">Verified Professionals</h3>
+                <p className="text-slate-600 leading-relaxed">
                   All our service providers are thoroughly vetted, background-checked, and verified for your peace of mind.
                 </p>
               </div>
 
               <div className="text-center group slide-up" style={{animationDelay: '0.2s'}}>
-                <div className="w-20 h-20 bg-gradient-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft group-hover:shadow-medium transition-all duration-300 group-hover:scale-110">
+                <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft group-hover:shadow-large transition-all duration-300 group-hover:scale-110">
                   <i className="fas fa-clock text-3xl text-white"></i>
                 </div>
-                <h3 className="text-2xl font-bold text-text-primary mb-3">Quick Response</h3>
-                <p className="text-text-secondary leading-relaxed">
+                <h3 className="text-2xl font-bold text-slate-800 mb-3">Quick Response</h3>
+                <p className="text-slate-600 leading-relaxed">
                   Get instant quotes and same-day service availability. Most bookings are confirmed within minutes.
                 </p>
               </div>
 
               <div className="text-center group slide-up" style={{animationDelay: '0.4s'}}>
-                <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft group-hover:shadow-medium transition-all duration-300 group-hover:scale-110">
+                <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft group-hover:shadow-large transition-all duration-300 group-hover:scale-110">
                   <i className="fas fa-star text-3xl text-white"></i>
                 </div>
-                <h3 className="text-2xl font-bold text-text-primary mb-3">Quality Guaranteed</h3>
-                <p className="text-text-secondary leading-relaxed">
+                <h3 className="text-2xl font-bold text-slate-800 mb-3">Quality Guaranteed</h3>
+                <p className="text-slate-600 leading-relaxed">
                   100% satisfaction guarantee with transparent pricing and quality workmanship on every service.
                 </p>
               </div>
@@ -185,22 +185,31 @@ export default function Home() {
             <div className="text-center mb-12">
               <h3 className="text-3xl font-bold text-text-primary mb-8">Popular Services</h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                {services?.slice(0, 5).map((service, index) => (
-                  <div key={service.id} className="glass-card rounded-2xl p-6 text-center hover-lift group cursor-pointer">
-                    <div className="w-16 h-16 bg-gradient-primary rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <i className={`fas ${
-                        service.displayName.includes('Cleaning') ? 'fa-spray-can' :
-                        service.displayName.includes('Plumbing') ? 'fa-wrench' :
-                        service.displayName.includes('Electrical') ? 'fa-bolt' :
-                        service.displayName.includes('Painting') ? 'fa-paint-roller' :
-                        'fa-leaf'
-                      } text-2xl text-white`}></i>
+                {services?.slice(0, 5).map((service, index) => {
+                  const colors = [
+                    'from-blue-500 to-cyan-600',
+                    'from-emerald-500 to-teal-600', 
+                    'from-amber-500 to-orange-600',
+                    'from-purple-500 to-violet-600',
+                    'from-rose-500 to-pink-600'
+                  ];
+                  return (
+                    <div key={service.id} className="glass-card rounded-2xl p-6 text-center hover-lift group cursor-pointer">
+                      <div className={`w-16 h-16 bg-gradient-to-br ${colors[index]} rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-soft`}>
+                        <i className={`fas ${
+                          service.displayName.includes('Cleaning') ? 'fa-spray-can' :
+                          service.displayName.includes('Plumbing') ? 'fa-wrench' :
+                          service.displayName.includes('Electrical') ? 'fa-bolt' :
+                          service.displayName.includes('Painting') ? 'fa-paint-roller' :
+                          'fa-leaf'
+                        } text-2xl text-white`}></i>
+                      </div>
+                      <h4 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                        {service.displayName}
+                      </h4>
                     </div>
-                    <h4 className="font-bold text-text-primary group-hover:text-primary transition-colors">
-                      {service.displayName}
-                    </h4>
-                  </div>
-                )) || []}
+                  )
+                }) || []}
               </div>
             </div>
           </div>

@@ -53,32 +53,33 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   
-  /* Custom ServiceHub variables */
-  --neutral: hsl(220, 15%, 97%);
-  --text-primary: hsl(220, 25%, 20%);
-  --text-secondary: hsl(220, 15%, 45%);
-  --success: hsl(142, 76%, 36%);
-  --error: hsl(0, 84%, 60%);
-  --warning: hsl(38, 92%, 50%);
-  --info: hsl(217, 91%, 60%);
+  /* Custom ServiceHub variables - Professional Color Palette */
+  --neutral: hsl(210, 20%, 98%);
+  --text-primary: hsl(210, 22%, 22%);
+  --text-secondary: hsl(210, 16%, 46%);
+  --success: hsl(145, 63%, 42%);
+  --error: hsl(0, 72%, 55%);
+  --warning: hsl(35, 86%, 52%);
+  --info: hsl(210, 79%, 46%);
   
-  /* Enhanced shadows with subtle colors */
-  --shadow-subtle: 0 1px 3px rgba(16, 24, 40, 0.05), 0 1px 2px rgba(16, 24, 40, 0.1);
-  --shadow-soft: 0 4px 6px -1px rgba(16, 24, 40, 0.08), 0 2px 4px -1px rgba(16, 24, 40, 0.06);
-  --shadow-medium: 0 10px 15px -3px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.05);
-  --shadow-large: 0 20px 25px -5px rgba(16, 24, 40, 0.08), 0 10px 10px -5px rgba(16, 24, 40, 0.04);
-  --shadow-xl: 0 25px 50px -12px rgba(16, 24, 40, 0.15);
+  /* Enhanced shadows with warm tones */
+  --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-soft: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06);
+  --shadow-medium: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+  --shadow-large: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 25px 50px -12px rgba(15, 23, 42, 0.18);
   
-  /* Glass morphism effects */
-  --glass-bg: rgba(255, 255, 255, 0.95);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+  /* Glass morphism effects - warmer tones */
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
   
-  /* Gradient backgrounds */
-  --gradient-primary: linear-gradient(135deg, hsl(210, 79%, 46%) 0%, hsl(220, 85%, 55%) 100%);
-  --gradient-secondary: linear-gradient(135deg, hsl(134, 51%, 39%) 0%, hsl(145, 60%, 45%) 100%);
-  --gradient-hero: linear-gradient(135deg, hsl(210, 79%, 46%) 0%, hsl(220, 85%, 55%) 50%, hsl(230, 90%, 60%) 100%);
-  --gradient-card: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+  /* Professional gradient backgrounds */
+  --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --gradient-secondary: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+  --gradient-hero: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #8b5cf6 100%);
+  --gradient-accent: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  --gradient-card: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
 }
 
 .dark {
@@ -135,7 +136,8 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: linear-gradient(135deg, #fafbff 0%, #f1f5f9 100%);
+    min-height: 100vh;
   }
   
   .bg-neutral {
@@ -232,7 +234,7 @@
     background: var(--gradient-primary);
     color: white;
     border: none;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
   }
@@ -244,8 +246,8 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    transition: left 0.6s ease;
   }
   
   .btn-gradient:hover::before {
@@ -253,8 +255,22 @@
   }
   
   .btn-gradient:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-medium);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+    background: linear-gradient(135deg, #5b52f0 0%, #8b5cf6 100%);
+  }
+  
+  .btn-secondary {
+    background: var(--gradient-secondary);
+    color: white;
+    border: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(5, 150, 105, 0.3);
+    background: linear-gradient(135deg, #0d9488 0%, #047857 100%);
   }
   
   .fade-in {

@@ -85,37 +85,37 @@ export default function SearchHero({ services, onSearch, isSearching, servicesLo
     <section className="relative bg-gradient-hero text-white py-20 lg:py-28 overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-indigo-400/15 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/15 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-violet-400/10 rounded-full blur-3xl"></div>
       </div>
       
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 fade-in">
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium mb-6">
-            <i className="fas fa-star text-yellow-300"></i>
-            <span>Trusted by 10,000+ customers</span>
+          <div className="inline-flex items-center gap-2 bg-white/25 backdrop-blur-sm rounded-full px-6 py-3 text-sm font-semibold mb-8 border border-white/20">
+            <i className="fas fa-star text-amber-300"></i>
+            <span className="text-white/95">Trusted by 10,000+ customers</span>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            Find <span className="text-transparent bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text">Expert</span>
+            Find <span className="text-transparent bg-gradient-to-r from-amber-300 via-orange-300 to-yellow-300 bg-clip-text">Expert</span>
             <br />Service Providers
           </h1>
-          <p className="text-xl md:text-2xl mb-4 text-blue-100 max-w-3xl mx-auto font-light">
+          <p className="text-xl md:text-2xl mb-6 text-white/90 max-w-3xl mx-auto font-light leading-relaxed">
             Connect with verified professionals near you for home services, repairs, and maintenance
           </p>
-          <div className="flex items-center justify-center gap-6 text-sm text-blue-200 mb-8">
-            <div className="flex items-center gap-2">
-              <i className="fas fa-shield-alt text-green-400"></i>
-              <span>Verified Professionals</span>
+          <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-white/80 mb-12">
+            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
+              <i className="fas fa-shield-alt text-emerald-400"></i>
+              <span className="font-medium">Verified Professionals</span>
             </div>
-            <div className="flex items-center gap-2">
-              <i className="fas fa-clock text-blue-300"></i>
-              <span>Same-day Service</span>
+            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
+              <i className="fas fa-clock text-sky-400"></i>
+              <span className="font-medium">Same-day Service</span>
             </div>
-            <div className="flex items-center gap-2">
-              <i className="fas fa-money-bill-wave text-green-300"></i>
-              <span>Fair Pricing</span>
+            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
+              <i className="fas fa-money-bill-wave text-green-400"></i>
+              <span className="font-medium">Fair Pricing</span>
             </div>
           </div>
         </div>
