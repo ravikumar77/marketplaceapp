@@ -1,0 +1,316 @@
+# Plan (high level — phases)
+
+1. **Phase 0 — Replit setup & repo skeleton** (1 session): create a Repl, set up project structure, secrets, and Replit AI usage workflow.
+2. **Phase 1 — Web MVP** (2–4 sessions): simple Express + SQLite backend + minimal frontend (served by Express) that supports service search by nearest, provider seed, and booking creation.
+3. **Phase 2 — Payments & Provider Onboarding**: integrate Stripe/Razorpay (test keys), upload docs (S3), provider acceptance flow, basic admin.
+4. **Phase 3 — AI matching microservice**: small FastAPI service for ranking (starts with heuristic -> upgrade to ML model).
+5. **Phase 4 — Subscriptions, enforcement & QoL**: subscription plans, messaging contact gating, review moderation.
+6. **Phase 5 — Productionize & mobile**: move DB → Postgres, containerize, CI/CD, port UI to Flutter or React Native.
+
+---
+
+# Phase 0 — Quick Replit setup (5–10 minutes)
+
+1. Create an account at replit.com and open the **AI** panel in your Repl (Ghostwriter / code assistant).
+2. Create a new Repl using **Node.js** template. Name it `service-marketplace-mvp`.
+3. In the Repl sidebar open **Secrets** (replit's environment variables) and add placeholders you’ll need later:
+
+   * `JWT_SECRET` (random string)
+   * `STRIPE_SECRET` (for Phase 2)
+   * `S3_KEY`, `S3_SECRET` (for Phase 2 if you use S3)
+4. Set the Run command to: `node server.js` (or `npm run dev` later).
+5. Open the Replit AI chat pane — we’ll use it to generate/fix code with the prompts I'll give below.
+
+---
+
+# Phase 1 — Web MVP (complete this before adding payments or AI)
+
+Goal: runnable web app on Replit where a user can search for nearby providers by service, view results sorted by distance and create a booking.
+
+## What we’ll build (MVP scope)
+
+* Minimal Express backend (SQLite) with seeded providers/services.
+* Endpoints: `/services`, `/search`, `/bookings`, `/providers/:id`
+* Static frontend served from `/public` — search UI + booking button.
+* All runnable on Replit (one Repl).
+
+## Files to create in your Repl
+
+* `package.json` (or `npm init -y`)
+* `server.js`
+* `public/index.html`
+* `.env` (local, but use Replit secrets in prod)
+
+## Commands to run in the Repl console
+
+```bash
+npm init -y
+npm install express sqlite3 cors uuid dotenv
+# optional dev
+npm install -D nodemon
+```
+
+Set `"start": "node server.js", "dev":"nodemon server.js"` in `package.json` scripts.
+
+---
+
+# Phase 1 — Paste-ready code (copy into your Repl)
+
+### `package.json` (if you didn't create one)
+
+```json
+{
+  "name": "service-marketplace-mvp",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.4",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
+```
+
+### `server.js` (full minimal backend + DB seeding)
+
+```js
+// server.js - Minimal Express + SQLite MVP
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const sqlite3 = require('sqlite3').verbose();
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+const DB_FILE = process.env.DB_FILE || './database.sqlite';
+const db = new sqlite3.Database(DB_FILE, (err) => {
+  if (err) console.error('DB open error', err);
+  else console.log('DB opened:', DB_FILE);
+});
+
+function runAsync(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) reject(err); else resolve(this);
+    });
+  });
+}
+function allAsync(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => { if (err) reject(err); else resolve(rows); });
+  });
+}
+
+async function initDB() {
+  await runAsync(`CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY, name TEXT, phone TEXT, role TEXT, created_at TEXT)`);
+  await runAsync(`CREATE TABLE IF NOT EXISTS providers (provider_id TEXT PRIMARY KEY, user_id TEXT, display_name TEXT, lat REAL, lon REAL, rating_avg REAL, created_at TEXT)`);
+  await runAsync(`CREATE TABLE IF NOT EXISTS services (service_id TEXT PRIMARY KEY, code TEXT, display_name TEXT, default_price REAL, default_unit TEXT)`);
+  await runAsync(`CREATE TABLE IF NOT EXISTS provider_services (id TEXT PRIMARY KEY, provider_id TEXT, service_id TEXT, base_price REAL, price_unit TEXT, active INTEGER)`);
+  await runAsync(`CREATE TABLE IF NOT EXISTS bookings (booking_id TEXT PRIMARY KEY, client_id TEXT, provider_id TEXT, service_id TEXT, scheduled_start TEXT, scheduled_end TEXT, status TEXT, price_charged REAL, created_at TEXT)`);
+
+  const services = await allAsync(`SELECT * FROM services`);
+  if (services.length === 0) {
+    const s1 = uuidv4(), s2 = uuidv4();
+    await runAsync(`INSERT INTO services (service_id, code, display_name, default_price, default_unit) VALUES (?,?,?,?,?)`, [s1, 'cleaning', 'Home Cleaning', 250, 'per_hour']);
+    await runAsync(`INSERT INTO services (service_id, code, display_name, default_price, default_unit) VALUES (?,?,?,?,?)`, [s2, 'plumbing', 'Plumbing', 500, 'per_job']);
+    console.log('Seeded services');
+  }
+
+  const provs = await allAsync(`SELECT * FROM providers`);
+  if (provs.length === 0) {
+    const p1 = uuidv4(), p2 = uuidv4();
+    // sample coordinates (Delhi)
+    await runAsync(`INSERT INTO providers (provider_id,user_id,display_name,lat,lon,rating_avg,created_at) VALUES (?,?,?,?,?,?,?)`, [p1, uuidv4(), 'Ramesh - Cleaner', 28.6139, 77.2090, 4.8, new Date().toISOString()]);
+    await runAsync(`INSERT INTO providers (provider_id,user_id,display_name,lat,lon,rating_avg,created_at) VALUES (?,?,?,?,?,?,?)`, [p2, uuidv4(), 'Sita - Plumber', 28.7041, 77.1025, 4.6, new Date().toISOString()]);
+
+    const svcCleaning = (await allAsync('SELECT service_id FROM services WHERE code = ?', ['cleaning']))[0].service_id;
+    const svcPlumbing = (await allAsync('SELECT service_id FROM services WHERE code = ?', ['plumbing']))[0].service_id;
+    await runAsync(`INSERT INTO provider_services (id, provider_id, service_id, base_price, price_unit, active) VALUES (?,?,?,?,?,?)`, [uuidv4(), p1, svcCleaning, 300, 'per_hour', 1]);
+    await runAsync(`INSERT INTO provider_services (id, provider_id, service_id, base_price, price_unit, active) VALUES (?,?,?,?,?,?)`, [uuidv4(), p2, svcPlumbing, 600, 'per_job', 1]);
+    console.log('Seeded providers');
+  }
+}
+
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const toRad = (v) => v * Math.PI / 180;
+  const R = 6371; // km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2)) * Math.sin(dLon/2)*Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// endpoints
+app.get('/services', async (req,res) => {
+  const rows = await allAsync('SELECT * FROM services');
+  res.json(rows);
+});
+
+app.post('/search', async (req,res) => {
+  try {
+    const { lat, lon, service_id } = req.body;
+    if (typeof lat !== 'number' || typeof lon !== 'number' || !service_id) return res.status(400).json({ error: 'lat, lon and service_id required' });
+    const rows = await allAsync(`
+      SELECT p.provider_id, p.display_name, p.lat, p.lon, p.rating_avg, ps.base_price, ps.price_unit
+      FROM providers p JOIN provider_services ps ON p.provider_id = ps.provider_id
+      WHERE ps.service_id = ? AND ps.active = 1
+    `, [service_id]);
+
+    const enriched = rows.map(r => ({ ...r, distance_km: haversineDistance(lat, lon, r.lat, r.lon) }));
+    enriched.sort((a,b) => a.distance_km - b.distance_km);
+    res.json(enriched.slice(0, 20));
+  } catch (err) { console.error(err); res.status(500).json({ error: 'server error' }); }
+});
+
+app.post('/bookings', async (req,res) => {
+  try {
+    const { client_id, provider_id, service_id, scheduled_start, scheduled_end } = req.body;
+    if (!client_id || !provider_id || !service_id || !scheduled_start) return res.status(400).json({ error: 'missing fields' });
+    const booking_id = uuidv4();
+    await runAsync(`INSERT INTO bookings (booking_id, client_id, provider_id, service_id, scheduled_start, scheduled_end, status, created_at) VALUES (?,?,?,?,?,?,?,?)`,
+      [booking_id, client_id, provider_id, service_id, scheduled_start, scheduled_end || null, 'requested', new Date().toISOString()]);
+    // TODO: notify provider (push/SMS) — done in Phase 2
+    res.status(201).json({ booking_id, status: 'requested' });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'server error' }); }
+});
+
+// simple provider profile
+app.get('/providers/:id', async (req,res) => {
+  const rows = await allAsync(`SELECT p.*, ps.base_price, ps.price_unit FROM providers p LEFT JOIN provider_services ps ON p.provider_id = ps.provider_id WHERE p.provider_id = ?`, [req.params.id]);
+  res.json(rows);
+});
+
+const PORT = process.env.PORT || 3000;
+initDB().then(() => {
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}).catch(err => console.error('DB init failed', err));
+```
+
+### `public/index.html` (minimal UI)
+
+```html
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Service Marketplace — MVP</title>
+  <style>
+    body{font-family: Arial, sans-serif; padding:20px}
+    .card{border:1px solid #eee;padding:12px;margin:8px 0;border-radius:6px}
+  </style>
+</head>
+<body>
+  <h1>Service Marketplace — MVP</h1>
+  <div>
+    <label for="serviceSelect">Service:</label>
+    <select id="serviceSelect"></select>
+    <button id="findBtn">Find Nearby</button>
+  </div>
+  <div id="results"></div>
+
+<script>
+async function loadServices() {
+  const res = await fetch('/services');
+  const services = await res.json();
+  const sel = document.getElementById('serviceSelect');
+  services.forEach(s => {
+    const opt = document.createElement('option'); opt.value = s.service_id; opt.textContent = s.display_name;
+    sel.appendChild(opt);
+  });
+}
+document.getElementById('findBtn').addEventListener('click', async () => {
+  const sel = document.getElementById('serviceSelect');
+  const service_id = sel.value;
+  if (!navigator.geolocation) return alert('Enable geolocation in your browser');
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const lat = pos.coords.latitude, lon = pos.coords.longitude;
+    const resp = await fetch('/search', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({lat,lon,service_id})});
+    const list = await resp.json();
+    const results = document.getElementById('results'); results.innerHTML = '';
+    list.forEach(p => {
+      const div = document.createElement('div'); div.className='card';
+      div.innerHTML = `<strong>${p.display_name}</strong><br/>${p.distance_km.toFixed(2)} km — ₹${p.base_price} (${p.price_unit}) <br/><button data-id="${p.provider_id}">Book</button>`;
+      results.appendChild(div);
+    });
+    document.querySelectorAll('#results button').forEach(btn => btn.addEventListener('click', async (e) => {
+      const provider_id = e.target.dataset.id;
+      // client_id for now is a demo; replace with real user after auth implemented
+      const payload = { client_id: 'demo-client-1', provider_id, service_id, scheduled_start: new Date().toISOString() };
+      const r = await fetch('/bookings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+      const data = await r.json();
+      alert('Booking requested: ' + (data.booking_id || JSON.stringify(data)));
+    }));
+  }, (err) => alert('Geolocation error: ' + err.message));
+});
+loadServices();
+</script>
+</body>
+</html>
+```
+
+## How to run on Replit
+
+1. Create a Node Repl and paste the above files.
+2. Install dependencies in the Shell (Replit console): `npm install`
+3. Click **Run**. Replit will show the hosted URL (open it) — the frontend will load, detect location, call `/search` and show seed providers. Click Book to create bookings.
+
+---
+
+# Phase 1 — Acceptance checklist (manual tests)
+
+* [ ] Repl runs and prints `Server running on port ...` in console.
+* [ ] `GET /services` returns service list.
+* [ ] Frontend loads, service dropdown populated.
+* [ ] Clicking **Find Nearby** asks for geolocation and shows providers sorted by distance.
+* [ ] Clicking **Book** creates a booking (check DB file or `bookings` table).
+
+If any test fails, copy the error message and paste it into the Replit AI assistant with this prompt:
+
+> "I'm running this project in Replit. server.js is producing this error: `[paste error text]`. Here is my `server.js` (paste). Please fix the bug and provide the corrected file."
+
+---
+
+# Using Replit AI agent — ready-made prompts you can paste
+
+Use these to speed up development:
+
+**Generate a new endpoint**
+
+```
+Write an Express endpoint /search that takes {lat,lon,service_id} and returns top 10 providers ordered by Haversine distance from a SQLite DB. Use parameterized queries. Return JSON. Keep code brief.
+```
+
+**Create a React component**
+
+```
+Create a React functional component `SearchResults` that calls POST /search with lat/lon and service_id, renders results list with Book button. Use fetch() and show loading state.
+```
+
+**Refactor / explain**
+
+```
+Explain what this function does and suggest 3 security improvements. [paste function]
+```
+
+**Write tests**
+
+```
+Create a simple test (Jest) to check /search returns a 200 and a JSON array. Provide package.json scripts and sample test file.
+```
+
+---
