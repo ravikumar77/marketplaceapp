@@ -76,6 +76,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Convert date strings to Date objects
+      if (bookingData.scheduledStart) {
+        bookingData.scheduledStart = new Date(bookingData.scheduledStart);
+      }
+      if (bookingData.scheduledEnd) {
+        bookingData.scheduledEnd = new Date(bookingData.scheduledEnd);
+      }
+      
       const validatedBookingData = insertBookingSchema.parse(bookingData);
       const booking = await storage.createBooking(validatedBookingData);
       res.status(201).json(booking);
