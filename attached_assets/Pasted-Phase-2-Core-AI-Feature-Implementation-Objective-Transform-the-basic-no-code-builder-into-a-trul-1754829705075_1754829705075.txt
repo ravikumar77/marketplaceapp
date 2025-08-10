@@ -1,0 +1,117 @@
+Phase 2 — Core AI & Feature Implementation
+Objective
+Transform the basic no-code builder into a truly AI-powered platform capable of creating, training, and running intelligent LLM agents with integrations and real-time capabilities.
+
+2.1 AI Engine Development
+LLM Model Management
+
+Integration Options:
+
+API-based (OpenAI GPT-4.1, Claude 3.5, Mistral, Gemini)
+
+Self-hosted LLM (Ollama, LM Studio, vLLM, Text Generation WebUI)
+
+Model Switching Logic:
+
+Auto-select based on cost, speed, accuracy
+
+Allow per-agent model choice
+
+Fine-tuning & Embeddings:
+
+Domain-specific knowledge injection
+
+Vector DB (Pinecone / Weaviate / ChromaDB)
+
+Agent Architecture
+
+Core Components:
+
+Memory module (short-term & long-term)
+
+Tool-calling / function-calling capabilities
+
+Multi-step reasoning chain
+
+Specialized Templates:
+
+Customer support bot
+
+Research bot
+
+Scheduling assistant
+
+Workflow automation agent
+
+2.2 No-Code Agent Builder
+Drag-and-Drop UI
+
+Blocks for:
+
+Triggers (Webhook, Schedule, API Event)
+
+Actions (Send message, API call, DB query)
+
+Decision nodes (If/Else)
+
+AI Processing blocks (LLM prompt, Summarizer, Classifier)
+
+Visual Data Flow
+
+Real-time execution preview
+
+Auto-generate JSON/YAML config for backend
+
+2.3 Multi-Platform Connectors
+Messaging & Collaboration
+
+Slack, Microsoft Teams, WhatsApp (via Twilio / Meta API), Telegram
+
+Data & APIs
+
+Google Sheets, Airtable, Notion, CRM APIs
+
+Cloud & Storage
+
+AWS S3, Azure Blob, Google Drive
+
+2.4 AI Prompt & Workflow Management
+Prompt library with categories
+
+Version control for prompts
+
+Auto-optimize prompts based on historical success rate
+
+2.5 Real-Time Execution Layer
+WebSocket & Server-Sent Events for live agent responses
+
+Async processing queue (Redis, RabbitMQ)
+
+Job retries & dead-letter queue
+
+2.6 Security & Compliance
+OAuth 2.0 / JWT for authentication
+
+Per-agent API keys & rate limits
+
+GDPR/CCPA data handling
+
+PII detection & masking in LLM calls
+
+2.7 Pricing & Monetization Hooks
+Compute-time tracking per agent
+
+Usage-based billing
+
+Free tier with limited models/features
+
+Deliverables for Phase 2
+AI engine integrated with multiple LLM providers
+
+Drag-and-drop workflow builder MVP
+
+5+ prebuilt agent templates
+
+At least 3 major connector integrations
+
+Billing & usage tracking backend

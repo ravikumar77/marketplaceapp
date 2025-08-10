@@ -1,0 +1,49 @@
+modules = ["nodejs-20", "web"]
+run = "npm run dev"
+
+[nix]
+channel = "stable-25_05"
+
+[deployment]
+run = ["sh", "-c", "npm run dev"]
+
+[workflows]
+runButton = "Development Server"
+
+[[workflows.workflow]]
+name = "Development Server"
+author = 46235711
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Setup Development Environment"
+author = 46235711
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔧 Setting up development environment...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📦 Installing dependencies...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🗄️  Note: You need to provision a PostgreSQL database and set DATABASE_URL in .env\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔑 Please configure your API keys in the .env file\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Setup complete! Run 'Development Server' when database is configured\""

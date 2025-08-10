@@ -1,10 +1,30 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite } from "./vite";
+import { serveStatic } from "./vite";
+import { WebSocketService } from "./websocket-service";
+import { QueueService } from "./queue-service";
+import { MemoryService } from "./memory-service";
+import { ToolsService, builtInTools } from "./tools-service";
+import { VectorService } from "./vector-service";
+import { monitoringService } from "./monitoring-service";
+import { log } from "node:util";
+import { createServer } from "node:http";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Initialize services
+const queueService = new QueueService();
+const memoryService = new MemoryService();
+const toolsService = new ToolsService();
+const vectorService = new VectorService();
+
+// Register built-in tools
+Object.values(builtInTools).forEach(tool => {
+  toolsService.registerTool(tool);
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -38,6 +58,9 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Initialize WebSocket service after HTTP server is created
+  const websocketService = new WebSocketService(server);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
