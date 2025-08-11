@@ -1,15 +1,10 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { MapPin, Search, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface Service {
-  id: string;
-  code: string;
-  displayName: string;
-}
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin, Search, Loader2, Sparkles, Star, Users, Award } from "lucide-react";
+import type { Service } from "@shared/schema";
 
 interface SearchHeroProps {
   services: Service[];
@@ -19,204 +14,231 @@ interface SearchHeroProps {
 }
 
 export default function SearchHero({ services, onSearch, isSearching, servicesLoading }: SearchHeroProps) {
-  const [selectedService, setSelectedService] = useState<string>("");
-  const [location, setLocation] = useState<string>("");
-  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lon: number } | null>(null);
-  const [gettingLocation, setGettingLocation] = useState(false);
-  const { toast } = useToast();
+  const [location, setLocation] = useState("");
+  const [selectedService, setSelectedService] = useState("");
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      toast({
-        title: "Geolocation not supported",
-        description: "Your browser doesn't support geolocation.",
-        variant: "destructive",
-      });
-      return;
+  const handleLocationClick = () => {
+    setIsGettingLocation(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation("Current Location");
+          setIsGettingLocation(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setIsGettingLocation(false);
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported by this browser.");
+      setIsGettingLocation(false);
     }
-
-    setGettingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setCurrentLocation({ lat: latitude, lon: longitude });
-        setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-        setGettingLocation(false);
-        
-        toast({
-          title: "Location detected",
-          description: "Your current location has been set.",
-        });
-      },
-      (error) => {
-        setGettingLocation(false);
-        toast({
-          title: "Location error",
-          description: `Error getting location: ${error.message}`,
-          variant: "destructive",
-        });
-      }
-    );
   };
 
   const handleSearch = () => {
-    if (!selectedService) {
-      toast({
-        title: "Service required",
-        description: "Please select a service type.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!selectedService) return;
 
-    if (!currentLocation) {
-      toast({
-        title: "Location required",
-        description: "Please allow location access or enter your location manually.",
-        variant: "destructive",
-      });
-      return;
+    if (location === "Current Location" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          onSearch(position.coords.latitude, position.coords.longitude, selectedService);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        }
+      );
+    } else {
+      // For demo purposes, use a default location
+      onSearch(40.7128, -74.0060, selectedService);
     }
-
-    onSearch(currentLocation.lat, currentLocation.lon, selectedService);
   };
 
   return (
-    <section className="relative bg-gradient-hero text-white py-20 lg:py-28 overflow-hidden">
-      {/* Background decorations */}
+    <section className="relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 animated-bg"></div>
+      
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20"></div>
+      
+      {/* Floating Elements */}
       <div className="absolute inset-0">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-indigo-400/15 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/15 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-violet-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '4s'}}></div>
       </div>
       
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 fade-in">
-          <div className="inline-flex items-center gap-2 bg-white/25 backdrop-blur-sm rounded-full px-6 py-3 text-sm font-semibold mb-8 border border-white/20">
-            <i className="fas fa-star text-amber-300"></i>
-            <span className="text-white/95">Trusted by 10,000+ customers</span>
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+        <div className="text-center mb-16 fade-in">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 bg-white/25 backdrop-blur-sm rounded-full px-6 py-3 text-sm font-bold mb-8 border border-white/20 hover-lift">
+            <Star className="text-yellow-300 fill-current" size={16} />
+            <span className="text-white">Trusted by 10,000+ customers</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            Find <span className="text-transparent bg-gradient-to-r from-amber-300 via-orange-300 to-yellow-300 bg-clip-text">Expert</span>
-            <br />Service Providers
+          {/* Main Heading */}
+          <h1 className="text-6xl md:text-8xl font-bold mb-8 leading-tight">
+            Find <span className="text-transparent bg-gradient-to-r from-yellow-300 via-orange-300 to-red-300 bg-clip-text">Expert</span>
+            <br />Service <span className="text-transparent bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text">Providers</span>
           </h1>
-          <p className="text-xl md:text-2xl mb-6 text-white/90 max-w-3xl mx-auto font-light leading-relaxed">
-            Connect with verified professionals near you for home services, repairs, and maintenance
+          
+          {/* Subtitle */}
+          <p className="text-xl md:text-2xl mb-10 text-white/90 max-w-4xl mx-auto font-light leading-relaxed">
+            Connect with verified professionals near you for home services, repairs, and maintenance with guaranteed quality
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-white/80 mb-12">
-            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-              <i className="fas fa-shield-alt text-emerald-400"></i>
-              <span className="font-medium">Verified Professionals</span>
+          
+          {/* Trust Indicators */}
+          <div className="flex justify-center items-center space-x-8 mb-12">
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+              <Users className="text-white" size={18} />
+              <span className="text-white font-semibold">500+ Providers</span>
             </div>
-            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-              <i className="fas fa-clock text-sky-400"></i>
-              <span className="font-medium">Same-day Service</span>
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+              <Award className="text-white" size={18} />
+              <span className="text-white font-semibold">100% Verified</span>
             </div>
-            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-              <i className="fas fa-money-bill-wave text-green-400"></i>
-              <span className="font-medium">Fair Pricing</span>
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+              <Star className="text-white fill-current" size={18} />
+              <span className="text-white font-semibold">4.9★ Rating</span>
             </div>
           </div>
         </div>
-        
-        <div className="glass-card rounded-2xl p-8 max-w-4xl mx-auto slide-up">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-            {/* Service Selection */}
-            <div className="lg:col-span-4">
-              <label className="block text-sm font-semibold text-text-primary mb-3">
-                <i className="fas fa-wrench mr-2 text-primary"></i>
-                What service do you need?
-              </label>
-              <Select value={selectedService} onValueChange={setSelectedService} disabled={servicesLoading}>
-                <SelectTrigger className="w-full h-12 rounded-xl border-2 shadow-soft hover:shadow-medium transition-all duration-300">
-                  <SelectValue placeholder={servicesLoading ? "Loading services..." : "Select a service..."} />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl shadow-xl border-0">
-                  {services.map((service) => (
-                    <SelectItem key={service.id} value={service.id} className="rounded-lg">
-                      <div className="flex items-center gap-3 py-1">
-                        <span className="text-2xl">{service.displayName.split(' ')[0]}</span>
-                        <span className="font-medium">{service.displayName.split(' ').slice(1).join(' ')}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* Location Input */}
-            <div className="lg:col-span-5">
-              <label className="block text-sm font-semibold text-text-primary mb-3">
-                <i className="fas fa-map-marker-alt mr-2 text-red-500"></i>
-                Where do you need service?
-              </label>
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Enter your location or use GPS"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="h-12 pr-14 rounded-xl border-2 shadow-soft hover:shadow-medium transition-all duration-300 text-base text-slate-900 bg-white border-slate-300 focus:border-primary focus:ring-primary placeholder:text-slate-500"
-                />
+
+        {/* Search Form */}
+        <div className="max-w-4xl mx-auto slide-up">
+          <div className="glass-card rounded-3xl p-8 md:p-12 shadow-2xl hover-lift">
+            <div className="flex flex-col lg:flex-row gap-6 items-end">
+              {/* Location Input */}
+              <div className="flex-1">
+                <label className="form-label text-gray-800 mb-3 block">
+                  <MapPin className="inline mr-2" size={16} />
+                  Your Location
+                </label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Enter your address or postal code"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="form-input text-lg h-14 pr-32"
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleLocationClick}
+                    disabled={isGettingLocation}
+                    className="absolute right-2 top-2 h-10 px-4 bg-purple-100 text-purple-700 hover:bg-purple-200 text-sm font-semibold rounded-lg transition-all"
+                  >
+                    {isGettingLocation ? (
+                      <Loader2 className="animate-spin" size={16} />
+                    ) : (
+                      <>
+                        <MapPin size={16} className="mr-1" />
+                        Use Current
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Service Selection */}
+              <div className="flex-1">
+                <label className="form-label text-gray-800 mb-3 block">
+                  <Sparkles className="inline mr-2" size={16} />
+                  Service Needed
+                </label>
+                <Select value={selectedService} onValueChange={setSelectedService}>
+                  <SelectTrigger className="form-input text-lg h-14">
+                    <SelectValue placeholder="What service do you need?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {servicesLoading ? (
+                      <SelectItem value="loading" disabled>
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="animate-spin" size={16} />
+                          Loading services...
+                        </div>
+                      </SelectItem>
+                    ) : (
+                      services.map((service) => (
+                        <SelectItem key={service.id} value={service.id} className="text-lg py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                              <i className={`fas ${
+                                service.displayName.includes('Cleaning') ? 'fa-spray-can' :
+                                service.displayName.includes('Plumbing') ? 'fa-wrench' :
+                                service.displayName.includes('Electrical') ? 'fa-bolt' :
+                                service.displayName.includes('Painting') ? 'fa-paint-roller' :
+                                'fa-cog'
+                              } text-white text-sm`}></i>
+                            </div>
+                            {service.displayName}
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Search Button */}
+              <div className="lg:w-auto w-full">
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 rounded-lg hover:bg-primary/10 transition-all duration-300"
-                  onClick={handleGetLocation}
-                  disabled={gettingLocation}
+                  onClick={handleSearch}
+                  disabled={!selectedService || !location || isSearching}
+                  className="btn-neon w-full lg:w-auto h-14 px-8 text-lg font-bold"
                 >
-                  {gettingLocation ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  {isSearching ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={20} />
+                      Searching...
+                    </>
                   ) : (
-                    <MapPin className="h-5 w-5 text-primary" />
+                    <>
+                      <Search className="mr-2" size={20} />
+                      Find Providers
+                    </>
                   )}
                 </Button>
               </div>
-              {currentLocation && (
-                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-                  <i className="fas fa-check-circle"></i>
-                  Location detected successfully
-                </p>
-              )}
             </div>
-            
-            {/* Search Button */}
-            <div className="lg:col-span-3">
-              <Button
-                onClick={handleSearch}
-                disabled={isSearching || !selectedService || !currentLocation}
-                className="w-full h-12 btn-gradient rounded-xl text-base font-semibold shadow-soft hover:shadow-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSearching ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-5 w-5 mr-2" />
-                    Find Providers
-                  </>
-                )}
-              </Button>
+
+            {/* Popular Searches */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <p className="text-gray-600 font-semibold mb-4">Popular searches:</p>
+              <div className="flex flex-wrap gap-3">
+                {["House Cleaning", "Plumbing Repair", "Electrical Work", "Painting", "Garden Maintenance"].map((search) => (
+                  <button
+                    key={search}
+                    onClick={() => {
+                      const service = services.find(s => s.displayName.toLowerCase().includes(search.toLowerCase().split(' ')[0]));
+                      if (service) setSelectedService(service.id);
+                    }}
+                    className="px-4 py-2 bg-gray-100 hover:bg-purple-100 text-gray-700 hover:text-purple-700 rounded-full text-sm font-medium transition-all hover-lift"
+                  >
+                    {search}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          
-          {/* Popular Services */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-sm font-medium text-text-secondary mb-3">Popular services:</p>
-            <div className="flex flex-wrap gap-2">
-              {services.slice(0, 4).map((service) => (
-                <button
-                  key={service.id}
-                  onClick={() => setSelectedService(service.id)}
-                  className="px-4 py-2 text-sm bg-white/50 hover:bg-white/80 rounded-full border border-gray-200 transition-all duration-300 hover:scale-105 font-medium"
-                >
-                  {service.displayName}
-                </button>
-              ))}
+        </div>
+
+        {/* Bottom Stats */}
+        <div className="mt-16 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
+            <div className="text-white/90">
+              <div className="text-3xl font-bold text-yellow-300 mb-2">2 mins</div>
+              <div className="text-lg">Average Response Time</div>
+            </div>
+            <div className="text-white/90">
+              <div className="text-3xl font-bold text-green-300 mb-2">24/7</div>
+              <div className="text-lg">Customer Support</div>
+            </div>
+            <div className="text-white/90">
+              <div className="text-3xl font-bold text-blue-300 mb-2">100%</div>
+              <div className="text-lg">Satisfaction Guarantee</div>
             </div>
           </div>
         </div>

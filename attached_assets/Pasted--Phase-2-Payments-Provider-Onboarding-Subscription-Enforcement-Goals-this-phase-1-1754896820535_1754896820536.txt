@@ -1,0 +1,328 @@
+
+# Phase 2 — Payments, Provider Onboarding & Subscription Enforcement
+
+## Goals (this phase)
+
+1. Add **online payments** (Stripe recommended; can swap Razorpay).
+2. Add **provider onboarding** with document upload and admin approval flow.
+3. Add **subscription plans** and enforcement (prevent outside-app payments unless both parties are subscribed; record offline payments).
+4. Add **basic admin endpoints** to view/approve providers and monitor payments.
+5. Keep everything runnable on Replit.
+
+---
+
+## Prerequisites on Replit
+
+* You already have the Phase 1 Repl with `server.js`, SQLite DB, and `public/`.
+* Add the following Replit secrets (Environment) via Replit Secrets:
+
+  * `STRIPE_SECRET` → your Stripe test secret key (sk\_test\_...)
+  * `STRIPE_WEBHOOK_SECRET` → webhook secret (you can set later)
+  * `JWT_SECRET` → existing or new secret
+  * `DB_FILE` → keep default or set path
+* In `package.json` add new dependencies (or run `npm i` below).
+
+Install packages:
+
+```bash
+npm install stripe multer express-validator
+```
+
+---
+
+## 1) Stripe integration (server-side)
+
+### a) Add endpoints to create payment intents and a webhook to confirm payments
+
+Append/update your `server.js` with the following (or create a new module and import it):
+
+```js
+// at top of server.js (after other requires)
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET || 'sk_test_placeholder');
+const bodyParser = require('body-parser');
+
+// Use raw body for webhook route, so add this before app.use(express.json()) or configure selectively
+app.use((req, res, next) => {
+  // skip for webhook path to let raw parser handle it later
+  if (req.originalUrl === '/payments/webhook') return next();
+  express.json()(req, res, next);
+});
+
+// Create Payment Intent for a booking
+app.post('/payments/create-intent', async (req, res) => {
+  try {
+    const { booking_id, amount, currency='inr', client_email } = req.body;
+    if(!booking_id || !amount) return res.status(400).json({error:'booking_id and amount required'});
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // rupees -> paise
+      currency,
+      receipt_email: client_email,
+      metadata: { booking_id }
+    });
+    res.json({ clientSecret: paymentIntent.client_secret });
+  } catch (err) { console.error('create-intent', err); res.status(500).json({error:'stripe error'}); }
+});
+
+// Webhook - must use raw body
+app.post('/payments/webhook', bodyParser.raw({type: 'application/json'}), (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder');
+  } catch (err) {
+    console.error('Webhook signature verification failed.', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the event
+  if (event.type === 'payment_intent.succeeded') {
+    const pi = event.data.object;
+    const booking_id = pi.metadata.booking_id;
+    console.log('Payment succeeded for booking', booking_id);
+    // Update booking payment_status / status in DB
+    db.run(`UPDATE bookings SET status = ?, price_charged = ? WHERE booking_id = ?`, ['confirmed', (pi.amount/100), booking_id], function(err){
+      if (err) console.error('DB update after payment failed', err);
+    });
+  }
+  res.json({received: true});
+});
+```
+
+**Notes**
+
+* In development on Replit, use Stripe CLI to forward webhooks to your Repl or use a publicly accessible endpoint (Replit provides a URL). You’ll set `STRIPE_WEBHOOK_SECRET` from the Stripe CLI or dashboard.
+* Currency and amount rounding handled as integer paise.
+
+### b) Frontend: Add checkout flow (client side)
+
+Modify `public/index.html` to include a simple Stripe checkout using `stripe.js`. Minimal example:
+
+```html
+<!-- include stripe.js in head -->
+<script src="https://js.stripe.com/v3/"></script>
+
+<!-- after booking button success: call backend to create intent and open payment -->
+<script>
+async function payForBooking(booking_id, amount) {
+  // create intent
+  const resp = await fetch('/payments/create-intent', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ booking_id, amount, client_email: 'demo@example.com' })
+  });
+  const { clientSecret } = await resp.json();
+  const stripe = Stripe('pk_test_placeholder'); // Replace with your public key in production; store via .env or frontend config
+  const { error } = await stripe.confirmCardPayment(clientSecret, {
+    payment_method: {
+      card: { /* you should render Stripe Elements in prod; this is simplified for MVP */ }
+    }
+  });
+  if (error) alert('Payment failed: ' + error.message); else alert('Payment complete!');
+}
+</script>
+```
+
+For MVP, you can avoid building Elements UI by using Payment Links or accept offline payment then mark paid – but Stripe Elements is recommended when moving forward.
+
+---
+
+## 2) Provider Onboarding (uploads + approval)
+
+### a) File uploads (multer)
+
+Install multer already (we added earlier). Add upload folder and endpoint:
+
+```js
+const multer = require('multer');
+const fs = require('fs');
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) { cb(null, uploadDir); },
+  filename: function (req, file, cb) { cb(null, Date.now()+'-'+file.originalname); }
+});
+const upload = multer({ storage });
+
+app.post('/providers/onboard', upload.array('documents', 5), async (req, res) => {
+  try {
+    const { name, phone, display_name, lat, lon } = req.body;
+    if (!name || !phone) return res.status(400).json({ error:'name & phone required' });
+    const user_id = uuidv4(), provider_id = uuidv4();
+    await runAsync(`INSERT INTO users (user_id,name,phone,role,created_at) VALUES (?,?,?,?,?)`, [user_id, name, phone, 'provider', new Date().toISOString()]);
+    const docFiles = (req.files || []).map(f => ({ path: f.path, original: f.originalname }));
+    await runAsync(`INSERT INTO providers (provider_id,user_id,display_name,lat,lon,rating_avg,created_at) VALUES (?,?,?,?,?,?,?)`, [provider_id, user_id, display_name || name, parseFloat(lat||0), parseFloat(lon||0), 0, new Date().toISOString()]);
+    // store documents as JSON in providers.documents column (if exists) - we used providers table earlier without documents; update schema if needed
+    await runAsync(`UPDATE providers SET documents = ? WHERE provider_id = ?`, [JSON.stringify(docFiles), provider_id]);
+    // mark provider status as pending verification in users table
+    await runAsync(`UPDATE users SET status = ? WHERE user_id = ?`, ['pending_verification', user_id]);
+    // notify admin (for MVP just return)
+    res.json({ provider_id, user_id, message: 'Submitted for verification' });
+  } catch (err) { console.error(err); res.status(500).json({error:'server error'}); }
+});
+```
+
+**b) Admin approve endpoint**
+
+Add a simple admin endpoint to mark a provider verified:
+
+```js
+// Admin approves provider - naive auth; protect this route in production
+app.post('/admin/approve-provider', async (req, res) => {
+  const { provider_id } = req.body;
+  if (!provider_id) return res.status(400).json({ error: 'provider_id required' });
+  // update users.status & providers.verified_at
+  const rows = await allAsync(`SELECT user_id FROM providers WHERE provider_id = ?`, [provider_id]);
+  if (rows.length === 0) return res.status(404).json({ error:'provider not found' });
+  const user_id = rows[0].user_id;
+  await runAsync(`UPDATE users SET status = ? WHERE user_id = ?`, ['active', user_id]);
+  await runAsync(`UPDATE providers SET verified_at = ? WHERE provider_id = ?`, [new Date().toISOString(), provider_id]);
+  res.json({ ok: true });
+});
+```
+
+**Notes**
+
+* In production implement RBAC and admin auth.
+* Optionally integrate a third-party KYC provider.
+
+---
+
+## 3) Subscriptions & enforcement
+
+### a) DB additions — subscription tables
+
+Add schema for `plans` and `subscriptions` (run once). You can add to `initDB()`:
+
+```js
+await runAsync(`CREATE TABLE IF NOT EXISTS plans (plan_id TEXT PRIMARY KEY, name TEXT, price REAL, billing_cycle TEXT, features TEXT)`);
+await runAsync(`CREATE TABLE IF NOT EXISTS subscriptions (subscription_id TEXT PRIMARY KEY, user_id TEXT, plan_id TEXT, start_date TEXT, end_date TEXT, status TEXT, auto_renew INTEGER)`);
+```
+
+Seed plans:
+
+```js
+const planFree = uuidv4(), planPro = uuidv4();
+await runAsync(`INSERT INTO plans (plan_id,name,price,billing_cycle,features) VALUES (?,?,?,?,?)`, [planFree,'Free',0,'monthly','{"priority":false}']);
+await runAsync(`INSERT INTO plans (plan_id,name,price,billing_cycle,features) VALUES (?,?,?,?,?)`, [planPro,'Pro',499,'monthly','{"priority":true}']);
+```
+
+### b) Subscription endpoint (create)
+
+A simplified subscription creation: creates a subscription row and (optionally) charges via Stripe.
+
+```js
+app.post('/subscriptions', async (req, res) => {
+  const { user_id, plan_id, payment_method } = req.body;
+  if (!user_id || !plan_id) return res.status(400).json({ error:'user_id & plan_id required' });
+  // get plan
+  const plans = await allAsync(`SELECT * FROM plans WHERE plan_id = ?`, [plan_id]);
+  if (plans.length === 0) return res.status(404).json({ error:'plan not found' });
+  const plan = plans[0];
+  // for paid plans charge via stripe here; for MVP assume success
+  const subscription_id = uuidv4();
+  const start = new Date();
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + 1);
+  await runAsync(`INSERT INTO subscriptions (subscription_id,user_id,plan_id,start_date,end_date,status,auto_renew) VALUES (?,?,?,?,?,?,?)`, [subscription_id, user_id, plan_id, start.toISOString(), end.toISOString(), 'active', 1]);
+  res.json({ subscription_id, status: 'active', start: start.toISOString(), end: end.toISOString() });
+});
+```
+
+### c) Enforce payment inside app (policy)
+
+Implement a booking middleware which enforces that if a client and provider attempt to communicate or complete booking offline, both must be in `Pro` or paid subscription, or platform will block contact.
+
+Simplest enforcement for MVP: when booking is created, check if `client_offline_payment === true` and if either party lacks active subscription then return error instructing to pay via app or subscribe.
+
+Example check in `/bookings` endpoint:
+
+```js
+// before inserting booking
+// check offline payment flag
+if (req.body.payment_method === 'offline') {
+  // check subscriptions for client and provider
+  const clientSubs = await allAsync(`SELECT * FROM subscriptions WHERE user_id = ? AND status='active'`, [client_id]);
+  const providerSubs = await allAsync(`SELECT * FROM subscriptions WHERE user_id = (SELECT user_id FROM providers WHERE provider_id = ?) AND status='active'`, [provider_id]);
+  if (clientSubs.length === 0 || providerSubs.length === 0) {
+    return res.status(403).json({ error: 'Both client and provider must have an active subscription to use offline payments. Please complete payment via app or subscribe.' });
+  }
+}
+```
+
+**Notes**
+
+* This is a business-policy enforcement; refine later (e.g., warn first, track TOS violations).
+
+---
+
+## 4) Admin Dashboard & Simple Views
+
+Add simple endpoints to view pending providers, subscriptions, and bookings:
+
+```js
+app.get('/admin/pending-providers', async (req,res) => {
+  const rows = await allAsync(`SELECT p.*, u.status FROM providers p JOIN users u ON p.user_id = u.user_id WHERE u.status = 'pending_verification'`);
+  res.json(rows);
+});
+app.get('/admin/bookings', async (req,res) => {
+  const rows = await allAsync(`SELECT * FROM bookings ORDER BY created_at DESC LIMIT 200`);
+  res.json(rows);
+});
+app.get('/admin/subscriptions', async (req,res) => {
+  const rows = await allAsync(`SELECT s.*, u.name FROM subscriptions s JOIN users u ON s.user_id = u.user_id ORDER BY s.start_date DESC`);
+  res.json(rows);
+});
+```
+
+Add basic frontend pages under `public/admin.html` to call these endpoints, or use Postman.
+
+---
+
+## 5) Replit AI prompts — use them to iterate & generate front-end payment UI
+
+Use these prompts in the Replit AI assistant to generate code fast:
+
+* Create a Stripe Elements payment form:
+
+```
+Create a minimal HTML + JS page `public/checkout.html` that renders Stripe Elements card input and calls POST /payments/create-intent to get client secret, then confirms card payment via stripe.confirmCardPayment. Use stripe.js. Keep layout minimal.
+```
+
+* Convert booking flow to use online payment:
+
+```
+Modify the booking button handler in public/index.html: when user clicks Book, call /bookings to create tentative booking, then call /payments/create-intent for the booking amount and open Stripe Elements checkout. If payment success, update UI to show confirmed.
+```
+
+* Improve onboarding UI:
+
+```
+Create a provider onboarding HTML page `public/onboard.html` with a multipart form to collect name, phone, display_name, lat, lon, and allow multi-file upload for documents. Submit to /providers/onboard and show response.
+```
+
+---
+
+## 6) Tests & manual verification on Replit
+
+1. Restart Repl (`Run`) and ensure server logs show DB initialized and no errors.
+2. Create a provider via `public/onboard.html`. Check `/admin/pending-providers`.
+3. Approve provider using `/admin/approve-provider` (Postman or simple admin UI).
+4. Create a booking via frontend. Try offline payment — ensure enforcement works (if you or provider lacks subscription).
+5. Try online payment flow:
+
+   * Use Stripe test card `4242 4242 4242 4242` with any valid expiry/CVC.
+   * Ensure webhook updates booking status to `confirmed`.
+
+Use Stripe CLI to forward webhooks to your Repl: `stripe listen --forward-to https://<your-repl-url>/payments/webhook` and copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET`.
+
+---
+
+## 7) Security & production considerations (next before going live)
+
+* Don’t store Stripe secret on frontend; use environment secrets.
+* Validate and sanitize all inputs.
+* Use HTTPS (Replit provides TLS for repl URLs).
+* Add authentication (JWT) for users and RBAC for admin endpoints.
+* Move file uploads to object storage (S3/Azure Blob) for scalability.
+* Use background jobs / message queue for heavy tasks (document scanning, KYC).
+* Add rate limiting and logging.

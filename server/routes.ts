@@ -4,8 +4,8 @@ import { storage } from "./storage";
 import { insertBookingSchema } from "@shared/schema";
 import { z } from "zod";
 import express from "express";
-import { db } from "./db.js";
-import { providers, services, bookings, reviews, users, agents, workflows, agentExecutions, prompts, agentMemories, platformConnectors, workflowExecutions, usageAnalytics } from "@shared/schema";
+import { db, bookings } from "./db.js";
+import { providers, services, reviews, users, agents, workflows, agentExecutions, prompts, agentMemories, platformConnectors, workflowExecutions, usageAnalytics } from "@shared/schema";
 import { eq, sql, and, desc, gte, lte } from "drizzle-orm";
 import { agentService } from "./agent-service.js";
 import { agentTemplateService } from "./agent-templates.js";
@@ -19,6 +19,29 @@ import { slackConnector } from './connectors/slack-connector.js';
 import { telegramConnector } from './connectors/telegram-connector.js';
 import { googleSheetsConnector } from './connectors/google-sheets-connector.js';
 import { monitoringService } from './monitoring-service.js';
+import Stripe from 'stripe';
+import { nanoid } from 'nanoid';
+import { paymentsService } from './payments-service';
+import { subscriptionService } from './subscription-service';
+import { providerService } from './provider-service';
+import multer from 'multer';
+import path from 'path';
+
+// Setup multer for file uploads
+const upload = multer({
+  dest: path.join(process.cwd(), 'uploads'),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+// Initialize Stripe only if API key is available
+let stripe: Stripe | null = null;
+if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== 'sk_test_your_stripe_secret_key_here') {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2023-08-16',
+  });
+} else {
+  console.warn('⚠️  Stripe API key not configured. Payment features will be disabled.');
+}
 
 const searchSchema = z.object({
   lat: z.number(),
@@ -31,7 +54,7 @@ const router = express.Router();
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize services
   const vectorService = new VectorService();
-  
+
   // Initialize database with seed data
   await storage.seedData();
 
@@ -87,34 +110,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create booking
   app.post("/api/bookings", async (req, res) => {
     try {
-      let bookingData = req.body;
+      const { providerId, clientPhone, clientName, serviceType, message, schedule, paymentMethod, clientId } = req.body;
 
-      // If clientId is a username, convert to actual ID
-      if (bookingData.clientId === "demo.client") {
-        const client = await storage.getUserByUsername("demo.client");
-        if (client) {
-          bookingData.clientId = client.id;
+      if (!providerId || !clientPhone || !clientName || !serviceType) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Check subscription enforcement for offline payments
+      if (paymentMethod === 'offline' && clientId) {
+        const providers = await db.select().from(providers).where(eq(providers.id, providerId));
+        if (providers.length === 0) {
+          return res.status(404).json({ error: "Provider not found" });
+        }
+
+        const provider = providers[0];
+
+        // Check if both client and provider have active subscriptions for offline payments
+        const clientCanUseOffline = await subscriptionService.canUseOfflinePayments(clientId);
+        const providerCanUseOffline = await subscriptionService.canUseOfflinePayments(provider.userId);
+
+        if (!clientCanUseOffline || !providerCanUseOffline) {
+          return res.status(403).json({
+            error: 'Both client and provider must have an active Pro subscription to use offline payments. Please complete payment via app or subscribe to Pro plan.'
+          });
         }
       }
 
-      // Convert date strings to Date objects
-      if (bookingData.scheduledStart) {
-        bookingData.scheduledStart = new Date(bookingData.scheduledStart);
-      }
-      if (bookingData.scheduledEnd) {
-        bookingData.scheduledEnd = new Date(bookingData.scheduledEnd);
+      // Parse and validate the schedule date
+      let scheduledStart = new Date();
+      if (schedule) {
+        try {
+          const scheduleDate = new Date(schedule);
+          if (!isNaN(scheduleDate.getTime())) {
+            scheduledStart = scheduleDate;
+          }
+        } catch (error) {
+          console.error('Error parsing schedule date:', error);
+          return res.status(400).json({ error: 'Invalid schedule date format' });
+        }
       }
 
-      const validatedBookingData = insertBookingSchema.parse(bookingData);
-      const booking = await storage.createBooking(validatedBookingData);
-      res.status(201).json(booking);
+      const booking = {
+        id: nanoid(),
+        providerId,
+        clientPhone,
+        clientName,
+        serviceType,
+        message: message || "",
+        schedule: schedule, // Store original schedule string if needed, but use scheduledStart for DB
+        status: "pending",
+        paymentMethod: paymentMethod || "online",
+        createdAt: new Date(),
+        updatedAt: new Date(), // Add updatedAt for consistency
+        scheduledStart: scheduledStart, // Use the parsed Date object
+      };
+
+      await db.insert(bookings).values(booking);
+      res.json(booking);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid booking data", details: error.errors });
-        return;
-      }
       console.error("Error creating booking:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Failed to create booking" });
     }
   });
 
@@ -133,6 +188,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching booking:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get user's bookings
+  app.get("/api/bookings/my-bookings", authService.authenticateJWT, async (req, res) => {
+    try {
+      const userId = req.user.userId;
+
+      // Get bookings for the user based on phone number or user ID
+      const userBookings = await db
+        .select({
+          id: bookings.id,
+          providerId: bookings.providerId,
+          clientPhone: bookings.clientPhone,
+          clientName: bookings.clientName,
+          serviceType: bookings.serviceType,
+          message: bookings.message,
+          schedule: bookings.schedule,
+          status: bookings.status,
+          paymentMethod: bookings.paymentMethod,
+          priceCharged: bookings.priceCharged,
+          createdAt: bookings.createdAt,
+          updatedAt: bookings.updatedAt,
+          provider: {
+            displayName: providers.displayName,
+            ratingAvg: providers.ratingAvg
+          }
+        })
+        .from(bookings)
+        .leftJoin(providers, eq(bookings.providerId, providers.id))
+        .where(eq(bookings.clientPhone, req.user.phone)) // Match by phone for now
+        .orderBy(desc(bookings.createdAt));
+
+      res.json(userBookings);
+    } catch (error) {
+      console.error("Error fetching user bookings:", error);
+      res.status(500).json({ error: "Failed to fetch bookings" });
+    }
+  });
+
+  // Cancel booking
+  app.put("/api/bookings/:id/cancel", authService.authenticateJWT, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.userId;
+
+      // Check if booking belongs to user
+      const booking = await db
+        .select()
+        .from(bookings)
+        .where(eq(bookings.id, id))
+        .limit(1);
+
+      if (booking.length === 0) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      // Update booking status to cancelled
+      await db
+        .update(bookings)
+        .set({
+          status: "cancelled",
+          updatedAt: new Date()
+        })
+        .where(eq(bookings.id, id));
+
+      res.json({ success: true, message: "Booking cancelled successfully" });
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      res.status(500).json({ error: "Failed to cancel booking" });
     }
   });
 
@@ -677,6 +802,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Stripe Payment Routes
+  app.post('/api/payments/create-payment-intent', authService.authenticateJWT, async (req, res) => {
+    if (!stripe) {
+      return res.status(503).json({ 
+        success: false, 
+        error: 'Payment processing is currently unavailable. Please configure Stripe API keys.' 
+      });
+    }
+
+    const { amount, currency = 'usd', paymentMethodType } = req.body;
+
+    try {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency,
+        payment_method_types: [paymentMethodType],
+      });
+      res.json({ success: true, clientSecret: paymentIntent.client_secret });
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
+      res.status(500).json({ success: false, error: 'Failed to create payment intent' });
+    }
+  });
+
+  app.post('/api/payments/webhook', async (req, res) => {
+    if (!stripe) {
+      return res.status(503).json({ 
+        success: false, 
+        error: 'Webhook processing is currently unavailable. Please configure Stripe API keys.' 
+      });
+    }
+
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig!, webhookSecret!);
+    } catch (err) {
+      console.error(`Webhook signature verification failed.`, err.message);
+      return res.status(400).json({ success: false, error: 'Webhook signature verification failed' });
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object;
+        console.log(`PaymentIntent for ${paymentIntent.amount} was successful!`);
+        // Fulfill the customer's order or update database status
+        await paymentsService.handlePaymentSuccess(paymentIntent);
+        break;
+      case 'payment_intent.payment_failed':
+        const failedPaymentIntent = event.data.object;
+        console.log(`PaymentIntent failed: ${failedPaymentIntent.last_payment_error?.message}`);
+        // Notify the customer, update database status
+        await paymentsService.handlePaymentFailure(failedPaymentIntent);
+        break;
+      // ... handle other event types
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    // Return a 200 response to acknowledge receipt of the event
+    res.json({ received: true });
+  });
+
+
   // Vector Database Routes
   router.post('/api/vectors/embed', authService.authenticateJWT, async (req, res) => {
     try {
@@ -841,6 +1034,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, error: 'Failed to fetch agent metrics' });
     }
   });
+
+  // Provider Onboarding Routes
+  app.post('/api/providers/onboard', upload.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'documents', maxCount: 5 }]), async (req, res) => {
+    try {
+      const { userId, name, bio, services: serviceIds, category, address, phone, website, taxId } = req.body;
+      const profilePicture = req.files?.profilePicture?.[0];
+      const documents = req.files?.documents;
+
+      if (!userId || !name || !bio || !serviceIds || !category || !address || !phone || !taxId) {
+        return res.status(400).json({ success: false, error: 'Missing required fields for provider onboarding' });
+      }
+
+      // Process profile picture upload
+      let profilePictureUrl = null;
+      if (profilePicture) {
+        profilePictureUrl = await providerService.uploadFile(profilePicture.path, `providers/${userId}/profile/${profilePicture.filename}`);
+      }
+
+      // Process document uploads
+      let documentUrls = [];
+      if (documents && Array.isArray(documents)) {
+        for (const doc of documents) {
+          const url = await providerService.uploadFile(doc.path, `providers/${userId}/documents/${doc.filename}`);
+          documentUrls.push({ type: doc.fieldname, url }); // Assuming type can be inferred or handled
+        }
+      }
+
+      const newProvider = await providerService.onboardProvider({
+        userId,
+        name,
+        bio,
+        category,
+        address,
+        phone,
+        website: website || null,
+        taxId,
+        profilePictureUrl,
+        documentUrls,
+        serviceIds: typeof serviceIds === 'string' ? serviceIds.split(',') : serviceIds,
+      });
+
+      res.json({ success: true, data: newProvider });
+    } catch (error) {
+      console.error('Provider onboarding error:', error);
+      res.status(500).json({ success: false, error: 'Failed to onboard provider' });
+    }
+  });
+
+  // Provider Service Management
+  app.post('/api/providers/:providerId/services', authService.authenticateJWT, async (req, res) => {
+    try {
+      const { providerId } = req.params;
+      const { serviceId } = req.body;
+
+      if (providerId !== req.user.providerId) { // Ensure user is the provider
+        return res.status(403).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const providerServiceMapping = await providerService.addServiceToProvider(providerId, serviceId);
+      res.json({ success: true, data: providerServiceMapping });
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Failed to add service to provider' });
+    }
+  });
+
+  // Provider Subscription Management
+  app.post('/api/providers/:providerId/subscribe', authService.authenticateJWT, async (req, res) => {
+    try {
+      const { providerId } = req.params;
+      const { planId } = req.body;
+
+      if (providerId !== req.user.providerId) { // Ensure user is the provider
+        return res.status(403).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const subscription = await subscriptionService.createProviderSubscription(providerId, planId);
+      res.json({ success: true, data: subscription });
+    } catch (error) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/providers/:providerId/subscription', authService.authenticateJWT, async (req, res) => {
+    try {
+      const { providerId } = req.params;
+
+      if (providerId !== req.user.providerId) { // Ensure user is the provider
+        return res.status(403).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const subscription = await subscriptionService.getProviderSubscription(providerId);
+      res.json({ success: true, data: subscription });
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Failed to fetch provider subscription' });
+    }
+  });
+
 
   app.use(router);
 

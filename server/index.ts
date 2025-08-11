@@ -2,6 +2,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express, { type Request, Response, NextFunction } from "express";
+import Stripe from 'stripe';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { registerRoutes } from "./routes";
 import { setupVite } from "./vite";
 import { serveStatic } from "./vite";
@@ -22,7 +26,35 @@ if (!process.env.DATABASE_URL) {
 }
 
 const app = express();
-app.use(express.json());
+
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET || 'sk_test_placeholder');
+
+// Setup file uploads
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({ storage });
+
+// Raw body parser for webhooks
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/payments/webhook') {
+    return express.raw({ type: 'application/json' })(req, res, next);
+  }
+  express.json()(req, res, next);
+});
+
 app.use(express.urlencoded({ extended: false }));
 
 // Initialize services
@@ -30,6 +62,10 @@ const queueService = new QueueService();
 const memoryService = new MemoryService();
 const toolsService = new ToolsService();
 const vectorService = new VectorService();
+
+// Initialize subscription plans
+import { subscriptionService } from './subscription-service';
+subscriptionService.initializePlans().catch(console.error);
 
 // Register built-in tools
 Object.values(builtInTools).forEach(tool => {
