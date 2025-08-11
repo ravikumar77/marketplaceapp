@@ -472,25 +472,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication Routes
   router.post('/api/auth/register', async (req, res) => {
     try {
-      const { username, email, password } = req.body;
-      // Implementation would create user in database
-      const user = { id: 'user_' + Date.now(), username, email, role: 'user' };
-      const token = authService.generateJWT(user as any);
-      res.json({ success: true, data: { user, token } });
+      const { username, email, password, name } = req.body;
+
+      if (!username || !email || !password || !name) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Username, email, password, and name are required' 
+        });
+      }
+
+      // Check if user already exists
+      const existingUser = await authService.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Username already exists' 
+        });
+      }
+
+      const existingEmail = await authService.getUserByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Email already exists' 
+        });
+      }
+
+      // Create user in database
+      const hashedPassword = await authService.hashPassword(password);
+      const [newUser] = await db.insert(users).values({
+        username,
+        name,
+        password: hashedPassword,
+        role: 'client'
+      }).returning();
+
+      const token = authService.generateJWT(newUser);
+      res.json({ 
+        success: true, 
+        data: { 
+          user: { 
+            id: newUser.id, 
+            username: newUser.username, 
+            name: newUser.name,
+            role: newUser.role 
+          }, 
+          token 
+        } 
+      });
     } catch (error) {
-      res.status(400).json({ success: false, error: error.message });
+      console.error('Registration error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Internal server error during registration' 
+      });
     }
   });
 
   router.post('/api/auth/login', async (req, res) => {
     try {
       const { username, password } = req.body;
-      // Implementation would verify credentials
-      const user = { id: 'user_001', username, role: 'user', permissions: ['agent:read', 'agent:create'] };
-      const token = authService.generateJWT(user as any);
-      res.json({ success: true, data: { user, token } });
+
+      if (!username || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Username and password are required' 
+        });
+      }
+
+      // Find user by username
+      const user = await authService.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Invalid username or password' 
+        });
+      }
+
+      // Verify password
+      const isValidPassword = await authService.comparePassword(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Invalid username or password' 
+        });
+      }
+
+      const token = authService.generateJWT(user);
+      res.json({ 
+        success: true, 
+        data: { 
+          user: { 
+            id: user.id, 
+            username: user.username, 
+            name: user.name,
+            role: user.role 
+          }, 
+          token 
+        } 
+      });
     } catch (error) {
-      res.status(401).json({ success: false, error: 'Invalid credentials' });
+      console.error('Login error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Internal server error during login' 
+      });
     }
   });
 

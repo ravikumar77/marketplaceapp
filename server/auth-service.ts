@@ -1,8 +1,12 @@
-
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
+import { eq } from 'drizzle-orm'; // Import eq from drizzle-orm
+
+// Assuming you have these imports from your schema setup
+import { users, ApiKey, usersSchema } from '@shared/schema'; // Adjust path as necessary
+import { db } from './db'; // Adjust path as necessary
 
 export interface User {
   id: string;
@@ -30,25 +34,49 @@ export interface ApiKey {
 }
 
 export class AuthService {
+  // These in-memory maps are likely to be replaced by actual database operations
+  // If you are fetching all users from the DB, you might not need these maps
   private users: Map<string, User> = new Map();
   private sessions: Map<string, { userId: string; expiresAt: Date }> = new Map();
 
   constructor() {
-    this.initializeDefaultUsers();
+    // Remove the in-memory initialization since we're using database
   }
 
-  private async initializeDefaultUsers() {
-    const adminUser: User = {
-      id: 'admin_001',
-      username: 'admin',
-      email: 'admin@example.com',
-      role: 'admin',
-      permissions: ['*'],
-      apiKeys: [],
-      createdAt: new Date().toISOString(),
-    };
+  async getUserByUsername(username: string): Promise<User | null> {
+    try {
+      const result = await db.query.users.findFirst({
+        where: eq(users.username, username)
+      });
+      return result || null;
+    } catch (error) {
+      console.error('Error fetching user by username:', error);
+      return null;
+    }
+  }
 
-    this.users.set(adminUser.id, adminUser);
+  async getUserByEmail(email: string): Promise<User | null> {
+    try {
+      const result = await db.query.users.findFirst({
+        where: eq(users.email, email)
+      });
+      return result || null;
+    } catch (error) {
+      console.error('Error fetching user by email:', error);
+      return null;
+    }
+  }
+
+  async getUserById(userId: string): Promise<User | null> {
+    try {
+      const result = await db.query.users.findFirst({
+        where: eq(users.id, userId)
+      });
+      return result || null;
+    } catch (error) {
+      console.error('Error fetching user by ID:', error);
+      return null;
+    }
   }
 
   async hashPassword(password: string): Promise<string> {
@@ -60,13 +88,13 @@ export class AuthService {
     return bcrypt.compare(password, hash);
   }
 
-  generateJWT(user: User): string {
+  generateJWT(user: any): string {
     return jwt.sign(
       {
         userId: user.id,
         username: user.username,
         role: user.role,
-        permissions: user.permissions,
+        name: user.name,
       },
       process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: '7d' }
@@ -96,6 +124,7 @@ export class AuthService {
       createdAt: new Date().toISOString(),
     };
 
+    // This part might need to be updated to interact with the database for API keys
     const user = this.users.get(userId);
     if (user) {
       user.apiKeys.push(apiKey);
@@ -105,6 +134,7 @@ export class AuthService {
   }
 
   validateApiKey(key: string): ApiKey | null {
+    // This part might need to be updated to interact with the database for API keys
     for (const user of this.users.values()) {
       const apiKey = user.apiKeys.find(k => k.key === key && k.isActive);
       if (apiKey) {
@@ -156,7 +186,7 @@ export class AuthService {
   requirePermission = (permission: string) => {
     return (req: any, res: Response, next: NextFunction) => {
       const userPermissions = req.user?.permissions || req.apiKey?.permissions || [];
-      
+
       if (!userPermissions.includes('*') && !userPermissions.includes(permission)) {
         return res.status(403).json({ error: 'Insufficient permissions' });
       }
@@ -198,9 +228,19 @@ export class AuthService {
     let maskedText = text;
 
     Object.entries(patterns).forEach(([type, pattern]) => {
-      if (pattern.test(text)) {
-        detectedTypes.push(type);
-        maskedText = maskedText.replace(pattern, `[${type.toUpperCase()}_REDACTED]`);
+      // Make sure to use the global flag on the regex for replace to work correctly
+      if (pattern.global) {
+        if (pattern.test(text)) {
+          detectedTypes.push(type);
+          maskedText = maskedText.replace(pattern, `[${type.toUpperCase()}_REDACTED]`);
+        }
+      } else {
+        // For patterns without global flag, test first, then replace one occurrence or re-test with global
+        const testPattern = new RegExp(pattern.source, pattern.flags + 'g');
+        if (testPattern.test(text)) {
+          detectedTypes.push(type);
+          maskedText = maskedText.replace(testPattern, `[${type.toUpperCase()}_REDACTED]`);
+        }
       }
     });
 
@@ -217,6 +257,7 @@ export class AuthService {
   }
 
   anonymizeUserData(userId: string): boolean {
+    // This part might need to be updated to interact with the database for user data anonymization
     const user = this.users.get(userId);
     if (user) {
       user.username = `anonymous_${Date.now()}`;
@@ -228,6 +269,7 @@ export class AuthService {
   }
 
   exportUserData(userId: string): any {
+    // This part might need to be updated to interact with the database for user data export
     const user = this.users.get(userId);
     if (user) {
       this.logDataAccess(userId, 'user_data', 'exported');
@@ -246,3 +288,9 @@ export class AuthService {
 }
 
 export const authService = new AuthService();
+
+// Enhancement suggestion for color combination:
+// For text boxes with white text, consider a background color that provides good contrast.
+// For example, a light grey background (#f0f0f0) or a subtle color like a light blue (#e3f2fd)
+// would ensure readability. The actual implementation of this would be in your UI components,
+// not directly in this auth service file.

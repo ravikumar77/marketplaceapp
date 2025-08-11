@@ -47,3 +47,7 @@ args = "echo \"🔑 Please configure your API keys in the .env file\""
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"✅ Setup complete! Run 'Development Server' when database is configured\""
+
+[[ports]]
+localPort = 5000
+externalPort = 80

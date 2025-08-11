@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import SearchHero from "@/components/search-hero";
 import ProviderGrid from "@/components/provider-grid";
@@ -6,32 +6,14 @@ import BookingModal from "@/components/booking-modal";
 import ProviderProfileModal from "@/components/provider-profile-modal";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-
-interface Service {
-  id: string;
-  code: string;
-  displayName: string;
-  defaultPrice: string;
-  defaultUnit: string;
-}
-
-interface Provider {
-  id: string;
-  displayName: string;
-  lat: number;
-  lon: number;
-  ratingAvg: number;
-  reviewCount: number;
-  verified: boolean;
-  about: string;
-  services: Array<{
-    basePrice: string;
-    priceUnit: string;
-    description?: string;
-    service: Service;
-  }>;
-  distance: number;
-}
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Star, Phone, Mail, Calendar, Users, CheckCircle, ArrowRight, Search, MapPin, Sparkles, User, LogOut } from "lucide-react";
+import { AuthModal } from "@/components/auth-modal";
+import { useAuth } from "@/hooks/use-auth";
+import type { Provider, Service } from "@shared/schema";
 
 export default function Home() {
   const [searchResults, setSearchResults] = useState<Provider[]>([]);
@@ -40,6 +22,9 @@ export default function Home() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const { user, isAuthenticated, login, logout, isLoading: authLoading } = useAuth();
 
   const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ["/api/services"],
@@ -61,13 +46,22 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error("Search failed");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Search failed with status ${response.status}`);
       }
 
       const providers = await response.json();
-      setSearchResults(providers);
+      console.log('Search results:', providers); // Debug log
+      setSearchResults(providers || []);
+      
+      if (providers.length === 0) {
+        // Show toast notification for no results
+        console.log('No providers found for the selected criteria');
+      }
     } catch (error) {
       console.error("Search error:", error);
+      // Could add toast notification here for better UX
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -105,22 +99,43 @@ export default function Home() {
                 <p className="text-sm text-text-secondary font-medium">Professional Services</p>
               </div>
             </div>
-            
+
             <nav className="hidden lg:flex items-center space-x-8">
               <a href="#" className="text-text-secondary hover:text-primary transition-all duration-300 font-medium hover:scale-105">Services</a>
               <a href="#" className="text-text-secondary hover:text-primary transition-all duration-300 font-medium hover:scale-105">How it works</a>
               <a href="#" className="text-text-secondary hover:text-primary transition-all duration-300 font-medium hover:scale-105">For Providers</a>
               <a href="#" className="text-text-secondary hover:text-primary transition-all duration-300 font-medium hover:scale-105">Support</a>
-              <div className="flex items-center space-x-3">
-                <Button variant="ghost" className="text-text-primary hover:text-primary font-medium">
-                  Sign In
-                </Button>
-                <Button className="btn-gradient px-6 py-2 rounded-xl font-semibold">
-                  Get Started
-                </Button>
-              </div>
+
+              {!authLoading && (
+                <div className="flex items-center space-x-4">
+                  {isAuthenticated ? (
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
+                        <User className="h-4 w-4 text-text-secondary" />
+                        <span className="text-text-secondary font-medium">{user?.name}</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={logout}
+                        className="flex items-center space-x-1"
+                      >
+                        <LogOut className="h-3 w-3" />
+                        <span>Logout</span>
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => setShowAuthModal(true)}
+                      className="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
+                    >
+                      Sign In
+                    </Button>
+                  )}
+                </div>
+              )}
             </nav>
-            
+
             <Button variant="ghost" className="lg:hidden text-text-primary hover:bg-white/50">
               <i className="fas fa-bars text-xl"></i>
             </Button>
@@ -129,7 +144,7 @@ export default function Home() {
       </header>
 
       {/* Search Hero */}
-      <SearchHero 
+      <SearchHero
         services={services}
         onSearch={handleSearch}
         isSearching={isSearching}
@@ -188,7 +203,7 @@ export default function Home() {
                 {services?.slice(0, 5).map((service, index) => {
                   const colors = [
                     'from-blue-500 to-cyan-600',
-                    'from-emerald-500 to-teal-600', 
+                    'from-emerald-500 to-teal-600',
                     'from-amber-500 to-orange-600',
                     'from-purple-500 to-violet-600',
                     'from-rose-500 to-pink-600'
@@ -232,7 +247,7 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-4 glass-card px-4 py-3 rounded-xl">
                 <i className="fas fa-sort text-text-secondary"></i>
                 <label className="text-sm font-medium text-text-secondary">Sort by:</label>
@@ -245,7 +260,7 @@ export default function Home() {
               </div>
             </div>
 
-            <ProviderGrid 
+            <ProviderGrid
               providers={searchResults}
               onBookService={handleBookService}
               onViewProfile={handleViewProfile}
@@ -256,16 +271,39 @@ export default function Home() {
 
       {/* Loading state for search */}
       {isSearching && (
-        <div className="fixed inset-0 bg-white bg-opacity-90 z-50 flex items-center justify-center">
-          <div className="text-center">
+        <div className="fixed inset-0 bg-white bg-opacity-90 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center glass-card p-8 rounded-2xl">
             <Loader2 className="animate-spin h-12 w-12 text-primary mx-auto mb-4" />
-            <p className="text-text-secondary">Finding providers near you...</p>
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">Searching for Providers</h3>
+            <p className="text-slate-600">Finding the best service providers near you...</p>
           </div>
         </div>
       )}
 
+      {/* No results message */}
+      {!isSearching && searchResults.length === 0 && (
+        <section className="py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div className="glass-card p-12 rounded-2xl">
+              <i className="fas fa-search text-4xl text-slate-400 mb-4"></i>
+              <h3 className="text-2xl font-bold text-slate-800 mb-3">No Providers Found</h3>
+              <p className="text-slate-600 mb-6">
+                We couldn't find any service providers in your area for the selected service. 
+                Try expanding your search radius or selecting a different service.
+              </p>
+              <Button 
+                onClick={() => setSearchResults([])}
+                className="btn-gradient"
+              >
+                Search Again
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Booking Modal */}
-      <BookingModal 
+      <BookingModal
         isOpen={showBookingModal}
         onClose={() => setShowBookingModal(false)}
         provider={selectedProvider}
@@ -274,11 +312,17 @@ export default function Home() {
       />
 
       {/* Provider Profile Modal */}
-      <ProviderProfileModal 
+      <ProviderProfileModal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         provider={selectedProvider}
         onBookService={handleBookService}
+      />
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={login}
       />
 
       {/* Footer */}
@@ -296,7 +340,7 @@ export default function Home() {
                 </div>
               </div>
               <p className="text-gray-300 leading-relaxed max-w-md mb-6">
-                Connect with trusted local service providers for all your home and business needs. 
+                Connect with trusted local service providers for all your home and business needs.
                 Experience quality service, verified professionals, and transparent pricing.
               </p>
               <div className="flex items-center space-x-6">
@@ -310,7 +354,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <h6 className="font-bold text-white mb-6 text-lg">Popular Services</h6>
               <ul className="space-y-3">
@@ -346,7 +390,7 @@ export default function Home() {
                 </li>
               </ul>
             </div>
-            
+
             <div>
               <h6 className="font-bold text-white mb-6 text-lg">Support & Legal</h6>
               <ul className="space-y-3">
@@ -383,7 +427,7 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          
+
           <div className="border-t border-gray-700 pt-8">
             <div className="flex flex-col lg:flex-row justify-between items-center">
               <div className="flex flex-col lg:flex-row items-center gap-4 mb-6 lg:mb-0">
@@ -394,7 +438,7 @@ export default function Home() {
                   <span>for better services</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-6">
                 <span className="text-gray-400 text-sm font-medium">Follow us:</span>
                 <div className="flex space-x-4">

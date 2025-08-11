@@ -65,7 +65,7 @@ export default function ProviderGrid({ providers, onBookService, onViewProfile }
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
       {providers.map((provider, index) => {
         const primaryService = provider.services[0];
-        
+
         return (
           <div key={provider.id} className="group glass-card rounded-2xl hover-lift overflow-hidden">
             {/* Card Header with Gradient */}
@@ -95,7 +95,7 @@ export default function ProviderGrid({ providers, onBookService, onViewProfile }
                       </p>
                     </div>
                   </div>
-                  
+
                   {provider.verified && (
                     <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-0 shadow-soft font-medium">
                       <i className="fas fa-shield-alt mr-1"></i>
@@ -114,13 +114,13 @@ export default function ProviderGrid({ providers, onBookService, onViewProfile }
                       <span className="text-sm font-bold text-text-primary ml-1">
                         {provider.ratingAvg.toFixed(1)}
                       </span>
+                      <span className="text-sm text-text-secondary font-medium">
+                        ({provider.reviewCount} reviews)
+                      </span>
                     </div>
-                    <span className="text-sm text-text-secondary font-medium">
-                      ({provider.reviewCount} reviews)
-                    </span>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between text-text-secondary text-sm mb-4">
                   <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
                     <MapPin className="w-4 h-4 text-indigo-600" />

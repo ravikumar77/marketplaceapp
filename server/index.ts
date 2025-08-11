@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite } from "./vite";
@@ -10,6 +13,13 @@ import { VectorService } from "./vector-service";
 import { monitoringService } from "./monitoring-service";
 import { log } from "node:util";
 import { createServer } from "node:http";
+
+// Validate required environment variables
+if (!process.env.DATABASE_URL) {
+  console.error("❌ DATABASE_URL is not set in environment variables");
+  console.error("Please ensure your .env file contains a valid DATABASE_URL");
+  process.exit(1);
+}
 
 const app = express();
 app.use(express.json());

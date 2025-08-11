@@ -43,6 +43,9 @@ export default {
         },
         border: "var(--border)",
         input: "var(--input)",
+        "input-foreground": "var(--input-foreground)",
+        "input-border": "var(--input-border)",
+        "input-placeholder": "var(--input-placeholder)",
         ring: "var(--ring)",
         chart: {
           "1": "var(--chart-1)",

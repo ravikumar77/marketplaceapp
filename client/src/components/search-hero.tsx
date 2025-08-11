@@ -157,7 +157,7 @@ export default function SearchHero({ services, onSearch, isSearching, servicesLo
                   placeholder="Enter your location or use GPS"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="h-12 pr-14 rounded-xl border-2 shadow-soft hover:shadow-medium transition-all duration-300 text-base"
+                  className="h-12 pr-14 rounded-xl border-2 shadow-soft hover:shadow-medium transition-all duration-300 text-base text-slate-900 bg-white border-slate-300 focus:border-primary focus:ring-primary placeholder:text-slate-500"
                 />
                 <Button
                   type="button"

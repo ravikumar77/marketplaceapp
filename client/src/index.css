@@ -23,7 +23,10 @@
   --destructive: hsl(356.3033, 90.5579%, 54.3137%);
   --destructive-foreground: hsl(0, 0%, 100%);
   --border: hsl(201.4286, 30.4348%, 90.9804%);
-  --input: hsl(200, 23.0769%, 97.4510%);
+  --input: hsl(0, 0%, 100%);
+  --input-foreground: hsl(0, 0%, 15%);
+  --input-border: hsl(210, 20%, 85%);
+  --input-placeholder: hsl(210, 10%, 60%);
   --ring: hsl(210, 79%, 46%);
   --chart-1: hsl(210, 79%, 46%);
   --chart-2: hsl(134, 51%, 39%);
@@ -100,7 +103,10 @@
   --destructive: hsl(356.3033, 90.5579%, 54.3137%);
   --destructive-foreground: hsl(0, 0%, 100%);
   --border: hsl(210, 5.2632%, 14.9020%);
-  --input: hsl(207.6923, 27.6596%, 18.4314%);
+  --input: hsl(210, 15%, 20%);
+  --input-foreground: hsl(0, 0%, 95%);
+  --input-border: hsl(210, 15%, 35%);
+  --input-placeholder: hsl(210, 10%, 65%);
   --ring: hsl(210, 79%, 46%);
   --chart-1: hsl(210, 79%, 46%);
   --chart-2: hsl(134, 51%, 39%);
@@ -166,6 +172,18 @@
   
   .text-info {
     color: var(--info);
+  }
+  
+  .text-input {
+    color: var(--input-foreground);
+  }
+  
+  .placeholder-input {
+    color: var(--input-placeholder);
+  }
+  
+  .border-input {
+    border-color: var(--input-border);
   }
   
   .bg-success {

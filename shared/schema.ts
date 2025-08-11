@@ -167,7 +167,7 @@ export const insertReviewSchema = createInsertSchema(reviews).omit({
 
 // AI Agent Tables
 export const agents = pgTable("agents", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").defaultRandom().primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   description: text("description"),
@@ -179,8 +179,8 @@ export const agents = pgTable("agents", {
 });
 
 export const workflows = pgTable("workflows", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  agentId: varchar("agent_id").notNull().references(() => agents.id),
+  id: uuid("id").defaultRandom().primaryKey(),
+  agentId: uuid("agent_id").notNull().references(() => agents.id),
   name: text("name").notNull(),
   description: text("description"),
   definition: text("definition").notNull(), // JSON string
@@ -190,9 +190,9 @@ export const workflows = pgTable("workflows", {
 });
 
 export const agentExecutions = pgTable("agent_executions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  agentId: varchar("agent_id").notNull().references(() => agents.id),
-  workflowId: varchar("workflow_id").references(() => workflows.id),
+  id: uuid("id").defaultRandom().primaryKey(),
+  agentId: uuid("agent_id").notNull().references(() => agents.id),
+  workflowId: uuid("workflow_id").references(() => workflows.id),
   status: text("status").notNull(), // running, completed, failed
   input: text("input"), // JSON string
   output: text("output"), // JSON string
